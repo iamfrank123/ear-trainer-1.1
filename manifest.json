@@ -1,0 +1,29 @@
+{
+    "name": "Ear Training Pro",
+    "short_name": "EarTraining",
+    "description": "Applicazione professionale per l'ear training con supporto MIDI completo. Accordi, scale e melodie.",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#0a0e1a",
+    "theme_color": "#6366f1",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "education",
+        "music"
+    ],
+    "lang": "it"
+}

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.75, maximum-scale=2.0, user-scalable=yes">
+    <script>
+        // Redirect to mobile version if on mobile device
+        if (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            window.location.replace("mobile.html");
+        }
+    </script>
+    <title>Ear Training Pro - Allenamento Musicale MIDI</title>
+    <meta name="description"
+        content="Applicazione professionale per l'ear training con supporto MIDI completo. Accordi, scale e melodie.">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#6366f1">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Ear Training Pro">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="shortcut icon" href="icon-192.png">
+
+    <!-- TailwindCSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@700;800;900&display=swap"
+        rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body class="dark-theme">
+
+    <!-- Header -->
+    <header class="header-bar">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1 class="logo-text">
+                        <span class="logo-icon">🎹</span>
+                        Ear Training Pro
+                    </h1>
+                </div>
+
+                <div class="header-actions">
+                    <!-- MIDI Status -->
+                    <div id="midiStatus" class="status-badge status-disconnected">
+                        <span class="status-dot"></span>
+                        <span class="status-text">MIDI Non Connesso</span>
+                    </div>
+
+                    <!-- License Button -->
+                    <button id="licenseBtn" class="icon-btn" title="Gestisci Licenza">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+
+            <!-- Mode Selection -->
+            <section class="mode-section glass-card">
+                <h2 class="section-title">Seleziona Modalità</h2>
+                <div class="mode-tabs">
+                    <button id="modeChords" class="mode-tab active" data-mode="chords">
+                        <span class="mode-icon">🎵</span>
+                        <span class="mode-label">Accordi</span>
+                    </button>
+                    <button id="modeScales" class="mode-tab" data-mode="scales">
+                        <span class="mode-icon">🎼</span>
+                        <span class="mode-label">Scale & Melodie</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Chords Panel -->
+            <section id="chordsPanel" class="training-panel glass-card">
+                <div class="panel-header-with-options">
+                    <h2 class="section-title">Seleziona Categorie di Accordi</h2>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <label class="panel-option-toggle">
+                            <input type="checkbox" id="allowInversions">
+                            <span>🔄 Flessibilità Inversioni</span>
+                        </label>
+                        <label class="panel-option-toggle">
+                            <input type="checkbox" id="autoPlayChordsToggle" checked>
+                            <span>🔊 Ascolto Auto</span>
+                        </label>
+                        <label class="panel-option-toggle">
+                            <input type="checkbox" id="autoAdvanceChordsToggle" checked>
+                            <span>⏭️ Avanza Auto</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="accordion-container">
+                    <!-- Triads -->
+                    <div class="accordion-item">
+                        <button class="accordion-header">
+                            <span class="accordion-title">Triadi</span>
+                            <svg class="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="triads"
+                                        data-type="major">
+                                    <span>Maggiore</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="triads"
+                                        data-type="minor">
+                                    <span>Minore</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="triads"
+                                        data-type="diminished">
+                                    <span>Diminuito</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="triads"
+                                        data-type="augmented">
+                                    <span>Aumentato</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sevenths -->
+                    <div class="accordion-item">
+                        <button class="accordion-header">
+                            <span class="accordion-title">Settime</span>
+                            <svg class="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="sevenths"
+                                        data-type="maj7">
+                                    <span>Maj7</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="sevenths"
+                                        data-type="min7">
+                                    <span>Min7</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="sevenths"
+                                        data-type="dom7">
+                                    <span>Dom7</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="sevenths"
+                                        data-type="m7b5">
+                                    <span>m7b5</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="sevenths"
+                                        data-type="dim7">
+                                    <span>Dim7</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ninths -->
+                    <div class="accordion-item">
+                        <button class="accordion-header">
+                            <span class="accordion-title">None</span>
+                            <svg class="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="ninths"
+                                        data-type="maj9">
+                                    <span>Maj9</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="ninths"
+                                        data-type="min9">
+                                    <span>Min9</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="ninths"
+                                        data-type="dom9">
+                                    <span>Dom9</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Elevenths -->
+                    <div class="accordion-item">
+                        <button class="accordion-header">
+                            <span class="accordion-title">Undicesime</span>
+                            <svg class="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="elevenths"
+                                        data-type="maj11">
+                                    <span>Maj11</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="elevenths"
+                                        data-type="min11">
+                                    <span>Min11</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="elevenths"
+                                        data-type="dom11">
+                                    <span>Dom11</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thirteenths -->
+                    <div class="accordion-item">
+                        <button class="accordion-header">
+                            <span class="accordion-title">Tredicesime</span>
+                            <svg class="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="thirteenths"
+                                        data-type="maj13">
+                                    <span>Maj13</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="thirteenths"
+                                        data-type="min13">
+                                    <span>Min13</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="thirteenths"
+                                        data-type="dom13">
+                                    <span>Dom13</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Altered -->
+                    <div class="accordion-item">
+                        <button class="accordion-header">
+                            <span class="accordion-title">Alterati</span>
+                            <svg class="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="altered"
+                                        data-type="7sharp5">
+                                    <span>7#5</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="altered"
+                                        data-type="7flat5">
+                                    <span>7b5</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="altered"
+                                        data-type="7sharp9">
+                                    <span>7#9</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="altered"
+                                        data-type="7flat9">
+                                    <span>7b9</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Suspended -->
+                    <div class="accordion-item">
+                        <button class="accordion-header">
+                            <span class="accordion-title">Suspended</span>
+                            <svg class="accordion-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+                        <div class="accordion-content">
+                            <div class="checkbox-grid">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="suspended"
+                                        data-type="sus2">
+                                    <span>Sus2</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="suspended"
+                                        data-type="sus4">
+                                    <span>Sus4</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" class="chord-checkbox" data-category="suspended"
+                                        data-type="7sus4">
+                                    <span>7sus4</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Scales Panel -->
+            <section id="scalesPanel" class="training-panel glass-card" style="display: none;">
+                <h2 class="section-title">Scale e Melodie</h2>
+
+                <div class="scales-config">
+                    <div class="config-group">
+                        <label class="config-label">Tonalità</label>
+                        <select id="scaleRoot" class="select-input">
+                            <option value="C">Do (C)</option>
+                            <option value="D">Re (D)</option>
+                            <option value="E">Mi (E)</option>
+                            <option value="F">Fa (F)</option>
+                            <option value="G">Sol (G)</option>
+                            <option value="A">La (A)</option>
+                            <option value="B">Si (B)</option>
+                            <option value="Db">Reb (Db)</option>
+                            <option value="Eb">Mib (Eb)</option>
+                            <option value="Gb">Solb (Gb)</option>
+                            <option value="Ab">Lab (Ab)</option>
+                            <option value="Bb">Sib (Bb)</option>
+                        </select>
+                    </div>
+
+                    <div class="config-group">
+                        <label class="config-label">Numero Note Melodia</label>
+                        <div class="slider-container">
+                            <input type="range" id="melodyLength" class="slider-input" min="2" max="8" value="4">
+                            <span id="melodyLengthValue" class="slider-value">4</span>
+                        </div>
+                    </div>
+
+                    <div class="config-group">
+                        <label class="config-label">Velocità (note/sec)</label>
+                        <div class="slider-container">
+                            <input type="range" id="melodySpeed" class="slider-input" min="1" max="4" step="0.5"
+                                value="2">
+                            <span id="melodySpeedValue" class="slider-value">2</span>
+                        </div>
+                    </div>
+
+                    <div class="config-group">
+                        <label class="checkbox-label checkbox-large">
+                            <input type="checkbox" id="startWithTonic">
+                            <span>🎯 Prima Nota = Tonica</span>
+                        </label>
+                    </div>
+
+                    <div class="config-group">
+                        <label class="checkbox-label checkbox-large">
+                            <input type="checkbox" id="includeChord">
+                            <span>Includi Accordo Base</span>
+                        </label>
+                    </div>
+
+                    <div class="config-group">
+                        <label class="checkbox-label checkbox-large">
+                            <input type="checkbox" id="autoPlayToggle" checked>
+                            <span>🔊 Ascolto Automatico</span>
+                        </label>
+                    </div>
+
+                    <div class="config-group">
+                        <label class="checkbox-label checkbox-large">
+                            <input type="checkbox" id="autoAdvanceToggle" checked>
+                            <span>⏭️ Avanzamento Automatico</span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Start Button & Exercise Display -->
+            <section class="action-section">
+                <button id="startBtn" class="start-btn">
+                    <span class="btn-icon">▶</span>
+                    <span class="btn-text">START</span>
+                </button>
+
+                <div id="exerciseDisplay" class="exercise-display glass-card" style="display: none;">
+                    <div class="exercise-info">
+                        <h3 class="exercise-title">Esercizio Attivo</h3>
+                        <p id="exerciseType" class="exercise-type">-</p>
+                        <label class="hide-name-toggle">
+                            <input type="checkbox" id="hideChordNameToggle">
+                            <span>👁️ Nascondi Nome Accordo</span>
+                        </label>
+                    </div>
+                    <div id="exerciseProgress" class="exercise-progress">
+                        <button id="listenBtn" class="listen-btn" onclick="app.playCurrentExercise()">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                            </svg>
+                            <span>Ascolta</span>
+                        </button>
+                        <p class="progress-text">Clicca "Ascolta" per sentire l'esercizio, poi suona sulla tastiera MIDI
+                        </p>
+                    </div>
+                </div>
+
+                <div id="feedbackDisplay" class="feedback-display" style="display: none;">
+                    <!-- Feedback will be injected here -->
+                </div>
+
+                <!-- Virtual Keyboard Section -->
+                <div class="virtual-keyboard-section glass-card">
+                    <div class="virtual-keyboard-header">
+                        <h3 class="section-title">🎹 Tastiera Virtuale</h3>
+                        <button id="clearKeyboardBtn" class="clear-btn" title="Rimuovi selezione">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Pulisci</span>
+                        </button>
+                    </div>
+                    <p class="keyboard-hint">Usa la tastiera virtuale o i bottoni se non hai MIDI connesso</p>
+
+                    <!-- Piano Keyboard (3 octaves) -->
+                    <div class="piano-keyboard" id="virtualPiano">
+                        <!-- Octave 3 (C3-B3) -->
+                        <div class="piano-octave">
+                            <div class="piano-key white" data-note="60"><span>C3</span></div>
+                            <div class="piano-key black" data-note="61"></div>
+                            <div class="piano-key white" data-note="62"><span>D3</span></div>
+                            <div class="piano-key black" data-note="63"></div>
+                            <div class="piano-key white" data-note="64"><span>E3</span></div>
+                            <div class="piano-key white" data-note="65"><span>F3</span></div>
+                            <div class="piano-key black" data-note="66"></div>
+                            <div class="piano-key white" data-note="67"><span>G3</span></div>
+                            <div class="piano-key black" data-note="68"></div>
+                            <div class="piano-key white" data-note="69"><span>A3</span></div>
+                            <div class="piano-key black" data-note="70"></div>
+                            <div class="piano-key white" data-note="71"><span>B3</span></div>
+                        </div>
+
+                        <!-- Octave 4 (C4-B4) -->
+                        <div class="piano-octave">
+                            <div class="piano-key white" data-note="72"><span>C4</span></div>
+                            <div class="piano-key black" data-note="73"></div>
+                            <div class="piano-key white" data-note="74"><span>D4</span></div>
+                            <div class="piano-key black" data-note="75"></div>
+                            <div class="piano-key white" data-note="76"><span>E4</span></div>
+                            <div class="piano-key white" data-note="77"><span>F4</span></div>
+                            <div class="piano-key black" data-note="78"></div>
+                            <div class="piano-key white" data-note="79"><span>G4</span></div>
+                            <div class="piano-key black" data-note="80"></div>
+                            <div class="piano-key white" data-note="81"><span>A4</span></div>
+                            <div class="piano-key black" data-note="82"></div>
+                            <div class="piano-key white" data-note="83"><span>B4</span></div>
+                        </div>
+
+                        <!-- Octave 5 (C5-B5) -->
+                        <div class="piano-octave">
+                            <div class="piano-key white" data-note="84"><span>C5</span></div>
+                            <div class="piano-key black" data-note="85"></div>
+                            <div class="piano-key white" data-note="86"><span>D5</span></div>
+                            <div class="piano-key black" data-note="87"></div>
+                            <div class="piano-key white" data-note="88"><span>E5</span></div>
+                            <div class="piano-key white" data-note="89"><span>F5</span></div>
+                            <div class="piano-key black" data-note="90"></div>
+                            <div class="piano-key white" data-note="91"><span>G5</span></div>
+                            <div class="piano-key black" data-note="92"></div>
+                            <div class="piano-key white" data-note="93"><span>A5</span></div>
+                            <div class="piano-key black" data-note="94"></div>
+                            <div class="piano-key white" data-note="95"><span>B5</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Note Buttons -->
+                    <div class="note-buttons">
+                        <button class="note-btn" data-pitch="0">C</button>
+                        <button class="note-btn" data-pitch="1">C#</button>
+                        <button class="note-btn" data-pitch="2">D</button>
+                        <button class="note-btn" data-pitch="3">D#</button>
+                        <button class="note-btn" data-pitch="4">E</button>
+                        <button class="note-btn" data-pitch="5">F</button>
+                        <button class="note-btn" data-pitch="6">F#</button>
+                        <button class="note-btn" data-pitch="7">G</button>
+                        <button class="note-btn" data-pitch="8">G#</button>
+                        <button class="note-btn" data-pitch="9">A</button>
+                        <button class="note-btn" data-pitch="10">A#</button>
+                        <button class="note-btn" data-pitch="11">B</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- License Modal -->
+    <div id="licenseModal" class="modal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2 class="modal-title">Gestione Licenza</h2>
+                <button class="modal-close" id="closeLicenseModal">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div id="licenseStatus" class="license-status">
+                    <!-- License status will be injected here -->
+                </div>
+
+                <div id="licenseForm" class="license-form">
+                    <label class="form-label">Codice Licenza</label>
+                    <input type="text" id="licenseInput" class="text-input" placeholder="EAR-XXXX-XXXX-XXXX">
+                    <button id="activateLicenseBtn" class="primary-btn">Attiva Licenza</button>
+                </div>
+
+                <div id="licenseMessage" class="license-message" style="display: none;">
+                    <!-- Messages will be shown here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p class="footer-text">
+                Ear Training Pro © 2025 |
+                <span id="footerLicenseStatus">Versione Gratuita</span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="audio.js"></script>
+    <script src="midi.js"></script>
+    <script src="generator.js"></script>
+    <script src="evaluator.js"></script>
+    <script src="license.js"></script>
+    <script src="app.js"></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('✅ Service Worker registrato:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('❌ Errore registrazione Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+
+</html>

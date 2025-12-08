@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ear Training Pro</title>
+    <meta name="description" content="Ear Training musicale con supporto MIDI">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#6366f1">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="EarTrainer">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ====================================
+           MOBILE-ONLY UI - Ear Training Pro
+           Designed exclusively for phones
+           ==================================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --bg-elevated: #252540;
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --success: #10b981;
+            --error: #ef4444;
+            --text: #ffffff;
+            --text-dim: #9ca3af;
+            --border: rgba(255, 255, 255, 0.1);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        html,
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            height: 100%;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        /* ====== APP CONTAINER ====== */
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ====== HEADER ====== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-title span {
+            font-size: 24px;
+        }
+
+        .midi-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--error);
+        }
+
+        .midi-status.connected {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .midi-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* ====== MAIN CONTENT ====== */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 16px;
+            padding-bottom: calc(80px + var(--safe-bottom));
+        }
+
+        /* ====== MODE TABS ====== */
+        .mode-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 14px 8px;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            color: var(--text-dim);
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-tab.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .mode-tab-icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        /* ====== EXERCISE CARD ====== */
+        .exercise-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+
+        .exercise-label {
+            font-size: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .exercise-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--accent-light);
+            margin-bottom: 16px;
+        }
+
+        .exercise-name.hidden {
+            filter: blur(10px);
+            user-select: none;
+        }
+
+        .listen-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--success), #059669);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.1s;
+        }
+
+        .listen-btn:active {
+            transform: scale(0.98);
+        }
+
+        .listen-btn.playing {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+
+        /* ====== OPTIONS PANEL ====== */
+        .options-panel {
+            background: var(--bg-card);
+            border-radius: 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
+        }
+
+        .options-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            cursor: pointer;
+        }
+
+        .options-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .options-toggle {
+            font-size: 20px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 4px 8px;
+            color: var(--text-dim);
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-left: 8px;
+        }
+
+        .toggle-btn.active {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--accent-light);
+            border-color: var(--accent);
+        }
+
+        .options-panel.open .options-toggle {
+            transform: rotate(180deg);
+        }
+
+        .options-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s;
+        }
+
+        .options-panel.open .options-content {
+            max-height: 500px;
+        }
+
+        .option-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .option-label {
+            font-size: 14px;
+            color: var(--text-dim);
+        }
+
+        /* Toggle Switch */
+        .toggle-switch {
+            width: 50px;
+            height: 28px;
+            background: var(--bg-elevated);
+            border-radius: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-switch.active {
+            background: var(--accent);
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: transform 0.2s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(22px);
+        }
+
+        /* Chord Types Grid */
+        .chord-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 12px 16px;
+        }
+
+        .chord-chip {
+            padding: 10px 8px;
+            background: var(--bg-elevated);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--text-dim);
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chord-chip.selected {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        /* ====== VIRTUAL KEYBOARD ====== */
+        .keyboard-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .keyboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .keyboard-title {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .octave-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .octave-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--bg-elevated);
+            border: none;
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .octave-btn:active {
+            background: var(--accent);
+        }
+
+        .octave-display {
+            padding: 8px 12px;
+            background: var(--bg-elevated);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* ====== NEW PIANO KEYBOARD ====== */
+        .piano {
+            display: flex;
+            justify-content: flex-start;
+            /* Align left to allow scroll */
+            padding: 10px 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+            /* Ensure full width */
+            touch-action: pan-x;
+            /* Explicitly allow horizontal panning */
+        }
+
+        .piano-inner {
+            display: flex;
+            position: relative;
+            height: 140px;
+            /* Width will be set dynamically */
+            padding: 0 50vw;
+            /* Padding to center initial view if needed, or just regular padding */
+            padding-left: 20px;
+            /* Start padding */
+            padding-right: 20px;
+            /* End padding */
+        }
+
+        .piano-key {
+            position: relative;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: all 0.08s ease;
+        }
+
+        .piano-key.white {
+            width: 28px;
+            height: 120px;
+            background: linear-gradient(to bottom, #fefefe 0%, #f0f0f0 100%);
+            border: 1px solid #bbb;
+            border-radius: 0 0 5px 5px;
+            margin: 0 1px;
+            z-index: 1;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 6px;
+            font-size: 9px;
+            font-weight: 600;
+            color: #888;
+        }
+
+        .piano-key.white:active,
+        .piano-key.white.pressed {
+            background: linear-gradient(to bottom, #e0e0e0 0%, #d0d0d0 100%);
+            transform: translateY(2px);
+        }
+
+        .piano-key.white.correct {
+            background: linear-gradient(to bottom, #34d399 0%, #10b981 100%) !important;
+            color: white;
+        }
+
+        .piano-key.white.incorrect {
+            background: linear-gradient(to bottom, #f87171 0%, #ef4444 100%) !important;
+            color: white;
+        }
+
+        .piano-key.black {
+            width: 20px;
+            height: 75px;
+            background: linear-gradient(to bottom, #444 0%, #222 40%, #000 100%);
+            border-radius: 0 0 4px 4px;
+            margin-left: -10px;
+            margin-right: -10px;
+            z-index: 2;
+            box-shadow:
+                0 2px 4px rgba(0, 0, 0, 0.3),
+                inset 0 -2px 3px rgba(255, 255, 255, 0.1);
+        }
+
+        .piano-key.black:active,
+        .piano-key.black.pressed {
+            background: linear-gradient(to bottom, #555 0%, #333 40%, #111 100%);
+            height: 73px;
+        }
+
+        .piano-key.black.correct {
+            background: linear-gradient(to bottom, #34d399 0%, #10b981 100%) !important;
+        }
+
+        .piano-key.black.incorrect {
+            background: linear-gradient(to bottom, #f87171 0%, #ef4444 100%) !important;
+        }
+
+        /* Note Buttons */
+        .note-buttons {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 6px;
+        }
+
+        .note-btn {
+            padding: 12px 4px;
+            background: var(--bg-elevated);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .note-btn:active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .note-btn.correct {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        .note-btn.incorrect {
+            background: var(--error);
+            border-color: var(--error);
+        }
+
+        /* ====== BOTTOM NAV ====== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            display: flex;
+            padding-bottom: var(--safe-bottom);
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 8px;
+            color: var(--text-dim);
+            font-size: 10px;
+            cursor: pointer;
+            transition: color 0.2s;
+            border: none;
+            background: none;
+        }
+
+        .nav-item.active {
+            color: var(--accent-light);
+        }
+
+        .nav-icon {
+            font-size: 22px;
+            margin-bottom: 4px;
+        }
+
+        /* ====== MODAL ====== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 340px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-elevated);
+            border: none;
+            border-radius: 50%;
+            color: var(--text);
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        /* ====== START BUTTON ====== */
+        .start-section {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .start-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: transform 0.1s;
+        }
+
+        .start-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* ====== UTILITIES ====== */
+        .hidden {
+            display: none !important;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .mb-2 {
+            margin-bottom: 8px;
+        }
+
+        .mb-4 {
+            margin-bottom: 16px;
+        }
+
+        /* License Premium Badge */
+        .premium-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Clear Button */
+        .clear-btn {
+            padding: 10px 16px;
+            background: rgba(239, 68, 68, 0.2);
+            border: none;
+            border-radius: 8px;
+            color: var(--error);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Slider */
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--bg-elevated);
+            border-radius: 3px;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            min-width: 30px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--accent-light);
+        }
+
+        /* Select */
+        .select-box {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+        }
+
+        /* License Lock & Premium Styling */
+        .chord-chip.locked {
+            opacity: 0.6;
+            background: rgba(30, 41, 59, 0.5);
+            cursor: pointer;
+            /* Still clickable to open modal */
+            border-color: rgba(255, 255, 255, 0.05);
+            position: relative;
+        }
+
+        .chord-chip.premium-chip::after {
+            content: '⭐';
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 10px;
+        }
+
+        .chord-chip.locked::after {
+            content: '🔒';
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            font-size: 10px;
+        }
+
+        /* PWA Install Prompt */
+        .pwa-prompt {
+            display: none;
+            /* Hidden by default */
+            position: fixed;
+            bottom: 80px;
+            /* Above bottom nav */
+            left: 16px;
+            right: 16px;
+            background: var(--bg-elevated);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid var(--accent);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 90;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        .pwa-prompt.visible {
+            display: flex;
+        }
+
+        .pwa-text {
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .pwa-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-title">
+                <span>🎹</span>
+                EarTrainer
+            </div>
+            <div class="midi-status" id="midiStatus">
+                <span class="midi-dot"></span>
+                <span>MIDI Off</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <!-- Mode Tabs -->
+            <div class="mode-tabs">
+                <button class="mode-tab active" id="modeChords" data-mode="chords">
+                    <span class="mode-tab-icon">🎵</span>
+                    Accordi
+                </button>
+                <button class="mode-tab" id="modeScales" data-mode="scales">
+                    <span class="mode-tab-icon">🎼</span>
+                    Melodie
+                </button>
+            </div>
+
+            <!-- PWA Install Prompt -->
+            <div class="pwa-prompt" id="pwaPrompt">
+                <span class="pwa-text">📱 Installa l'App per un'esperienza migliore!</span>
+                <button class="pwa-btn" id="pwaInstallBtn">Installa</button>
+            </div>
+
+            <!-- Start Section -->
+            <div class="start-section" id="startSection">
+                <button class="start-btn" id="startBtn">
+                    <span>▶</span>
+                    INIZIA ESERCIZIO
+                </button>
+            </div>
+
+
+
+            <!-- Chord Options Panel -->
+            <div class="options-panel" id="chordOptions">
+                <div class="options-header" onclick="toggleOptions('chordOptions')">
+                    <span class="options-title">⚙️ Tipi di Accordi</span>
+                    <span class="options-toggle">▼</span>
+                </div>
+                <div class="options-content">
+                    <div class="option-row">
+                        <span class="option-label">Tonalità (Opzionale)</span>
+                        <select class="select-box" id="chordRoot" style="width: auto; min-width: 100px;">
+                            <option value="">Casuale</option>
+                            <option value="C">Do (C)</option>
+                            <option value="D">Re (D)</option>
+                            <option value="E">Mi (E)</option>
+                            <option value="F">Fa (F)</option>
+                            <option value="G">Sol (G)</option>
+                            <option value="A">La (A)</option>
+                            <option value="B">Si (B)</option>
+                        </select>
+                    </div>
+                    <div class="chord-grid" id="chordTypesGrid">
+                        <div class="chord-chip selected" data-type="major">Magg</div>
+                        <div class="chord-chip selected" data-type="minor">Min</div>
+                        <div class="chord-chip" data-type="dim">Dim</div>
+                        <div class="chord-chip" data-type="aug">Aug</div>
+                        <!-- Premium Chips (7ths, Sus) -->
+                        <div class="chord-chip premium-chip" data-type="maj7">Maj7</div>
+                        <div class="chord-chip premium-chip" data-type="min7">Min7</div>
+                        <div class="chord-chip premium-chip" data-type="dom7">Dom7</div>
+                        <div class="chord-chip premium-chip" data-type="sus2">Sus2</div>
+                        <div class="chord-chip premium-chip" data-type="sus4">Sus4</div>
+                        <!-- Extra Premium (9, 11, 13) -->
+                        <div class="chord-chip premium-chip" data-type="maj9">Maj9</div>
+                        <div class="chord-chip premium-chip" data-type="min9">Min9</div>
+                        <div class="chord-chip premium-chip" data-type="dom9">Dom9</div>
+                        <div class="chord-chip premium-chip" data-type="maj11">Maj11</div>
+                        <div class="chord-chip premium-chip" data-type="min11">Min11</div>
+                        <div class="chord-chip premium-chip" data-type="maj13">Maj13</div>
+                        <div class="chord-chip premium-chip" data-type="min13">Min13</div>
+                    </div>
+                    <div class="option-row">
+                        <span class="option-label">🔄 Inversioni</span>
+                        <div class="toggle-switch" id="toggleInversions" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    <div class="option-row">
+                        <span class="option-label">🔊 Auto-play</span>
+                        <div class="toggle-switch active" id="toggleAutoPlay" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    <div class="option-row">
+                        <span class="option-label">⏭️ Avanza Auto</span>
+                        <div class="toggle-switch active" id="toggleAutoAdvance" onclick="toggleSwitch(this)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scale Options Panel (hidden by default) -->
+            <div class="options-panel hidden" id="scaleOptions">
+                <div class="options-header" onclick="toggleOptions('scaleOptions')">
+                    <span class="options-title">⚙️ Opzioni Melodia</span>
+                    <span class="options-toggle">▼</span>
+                </div>
+                <div class="options-content">
+                    <div class="option-row">
+                        <span class="option-label">Tonalità</span>
+                        <select class="select-box" id="scaleRoot" style="width: auto; min-width: 100px;">
+                            <option value="C">Do (C)</option>
+                            <option value="D">Re (D)</option>
+                            <option value="E">Mi (E)</option>
+                            <option value="F">Fa (F)</option>
+                            <option value="G">Sol (G)</option>
+                            <option value="A">La (A)</option>
+                            <option value="B">Si (B)</option>
+                        </select>
+                    </div>
+                    <div class="option-row">
+                        <span class="option-label">Note melodia</span>
+                        <div class="slider-row">
+                            <input type="range" class="slider" id="melodyLength" min="2" max="8" value="4">
+                            <span class="slider-value" id="melodyLengthValue">4</span>
+                        </div>
+                    </div>
+                    <div class="option-row">
+                        <span class="option-label">Velocità</span>
+                        <div class="slider-row">
+                            <input type="range" class="slider" id="melodySpeed" min="0.5" max="2" step="0.1"
+                                value="1.5">
+                            <span class="slider-value" id="melodySpeedValue">1.5</span>
+                        </div>
+                    </div>
+                    <div class="option-row">
+                        <span class="option-label">🎯 Inizia con Tonica</span>
+                        <div class="toggle-switch" id="toggleTonic" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    <div class="option-row">
+                        <span class="option-label">🔊 Auto-play</span>
+                        <div class="toggle-switch active" id="toggleScaleAutoPlay" onclick="toggleSwitch(this)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Exercise Card (Moved) -->
+            <div class="exercise-card hidden" id="exerciseCard" style="margin-bottom: 1rem;">
+                <div class="exercise-label">
+                    Accordo corrente
+                    <button class="toggle-btn" id="hideChordBtn" onclick="toggleHideChord()">
+                        👁️ Nascondi
+                    </button>
+                </div>
+                <div class="exercise-name" id="exerciseName">C Maggiore</div>
+                <button class="listen-btn" id="listenBtn">
+                    🔊 Ascolta
+                </button>
+            </div>
+
+            <!-- Keyboard Section -->
+            <div class="keyboard-section">
+                <div class="keyboard-header">
+                    <span class="keyboard-title">🎹 Tastiera (Do - Sol)</span>
+                    <button class="clear-btn" id="clearBtn">Pulisci</button>
+                </div>
+
+                <!-- NEW Piano Keyboard (Dynamic C3-C6) -->
+                <div class="piano" id="pianoKeyboard">
+                    <div class="piano-inner" id="pianoInner">
+                        <!-- Keys generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Note Buttons -->
+                <div class="note-buttons" id="noteButtons">
+                    <button class="note-btn" data-pitch="0">C</button>
+                    <button class="note-btn" data-pitch="1">C#</button>
+                    <button class="note-btn" data-pitch="2">D</button>
+                    <button class="note-btn" data-pitch="3">D#</button>
+                    <button class="note-btn" data-pitch="4">E</button>
+                    <button class="note-btn" data-pitch="5">F</button>
+                    <button class="note-btn" data-pitch="6">F#</button>
+                    <button class="note-btn" data-pitch="7">G</button>
+                    <button class="note-btn" data-pitch="8">G#</button>
+                    <button class="note-btn" data-pitch="9">A</button>
+                    <button class="note-btn" data-pitch="10">A#</button>
+                    <button class="note-btn" data-pitch="11">B</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-view="practice">
+                <span class="nav-icon">🎯</span>
+                Pratica
+            </button>
+            <button class="nav-item" data-view="stats">
+                <span class="nav-icon">📊</span>
+                Statistiche
+            </button>
+            <button class="nav-item" data-view="settings" id="navSettings">
+                <span class="nav-icon">⚙️</span>
+                Impostazioni
+            </button>
+            <button class="nav-item" data-view="license" id="navLicense">
+                <span class="nav-icon">🔐</span>
+                Licenza
+            </button>
+        </nav>
+    </div>
+
+    <!-- License Modal -->
+    <div class="modal-overlay" id="licenseModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span class="modal-title">🔐 Licenza</span>
+                <button class="modal-close" onclick="closeModal('licenseModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="licenseStatus" class="text-center mb-4">
+                    <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
+                    <div style="font-size: 16px; font-weight: 600; color: #f59e0b; margin-bottom: 8px;">Versione
+                        Gratuita</div>
+                    <div style="font-size: 13px; color: var(--text-dim);">Attiva Premium per tutte le funzionalità</div>
+                </div>
+                <div id="licenseForm">
+                    <input type="text" class="select-box mb-2" id="licenseInput" placeholder="EAR-XXXX-XXXX">
+                    <button class="start-btn" id="activateLicenseBtn" style="margin-top: 8px;">
+                        Attiva Licenza
+                    </button>
+                </div>
+                <div id="licenseMessage" class="hidden"
+                    style="padding: 12px; border-radius: 8px; margin-top: 12px; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <script src="audio.js"></script>
+    <script src="midi.js"></script>
+    <script src="generator.js"></script>
+    <script src="evaluator.js"></script>
+    <script src="license.js"></script>
+    <script src="app.js"></script>
+
+    <!-- Mobile UI Controller -->
+    <script>
+        // Toggle options panel
+        function toggleOptions(id) {
+            document.getElementById(id).classList.toggle('open');
+        }
+
+        // Toggle switch
+        function toggleSwitch(el) {
+            el.classList.toggle('active');
+        }
+
+        // Close modal
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // Open modal
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+
+        // Chord type selection
+        document.querySelectorAll('.chord-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                chip.classList.toggle('selected');
+            });
+        });
+
+        // Mode tabs
+        document.querySelectorAll('.mode-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+
+                const mode = tab.dataset.mode;
+                document.getElementById('chordOptions').classList.toggle('hidden', mode !== 'chords');
+                document.getElementById('scaleOptions').classList.toggle('hidden', mode !== 'scales');
+
+                // Update exercise label
+                document.querySelector('.exercise-label').textContent =
+                    mode === 'chords' ? 'Accordo corrente' : 'Melodia corrente';
+            });
+        });
+
+        // Bottom nav
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+
+                const view = item.dataset.view;
+                if (view === 'license') {
+                    openModal('licenseModal');
+                }
+            });
+        });
+
+        // Toggle Hide Chord
+        function toggleHideChord() {
+            const btn = document.getElementById('hideChordBtn');
+            const name = document.getElementById('exerciseName');
+            const isHidden = btn.classList.contains('active');
+
+            if (isHidden) {
+                // Show
+                btn.classList.remove('active');
+                name.classList.remove('hidden');
+                btn.innerHTML = '👁️ Nascondi';
+                localStorage.setItem('hideChord', 'false');
+            } else {
+                // Hide
+                btn.classList.add('active');
+                name.classList.add('hidden');
+                btn.innerHTML = '👁️ Mostra';
+                localStorage.setItem('hideChord', 'true');
+            }
+            // Trigger app update if needed
+        }
+
+        // Initialize Hide Chord state
+        if (localStorage.getItem('hideChord') === 'true') {
+            const btn = document.getElementById('hideChordBtn');
+            const name = document.getElementById('exerciseName');
+            if (btn && name) {
+                btn.classList.add('active');
+                name.classList.add('hidden');
+                btn.innerHTML = '👁️ Mostra';
+            }
+        }
+
+        // Octave control REMOVED - Fixed 1.5 octaves
+
+
+        // Slider value update
+        const melodySlider = document.getElementById('melodyLength');
+        const melodyValue = document.getElementById('melodyLengthValue');
+        if (melodySlider && melodyValue) {
+            melodySlider.addEventListener('input', () => {
+                melodyValue.textContent = melodySlider.value;
+            });
+        }
+
+        const melodySpeedSlider = document.getElementById('melodySpeed');
+        const melodySpeedValue = document.getElementById('melodySpeedValue');
+        if (melodySpeedSlider && melodySpeedValue) {
+            melodySpeedSlider.addEventListener('input', () => {
+                melodySpeedValue.textContent = melodySpeedSlider.value;
+            });
+        }
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('✅ SW registered'))
+                .catch(err => console.log('SW error:', err));
+        }
+    </script>
+</body>
+
+</html>
