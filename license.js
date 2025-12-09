@@ -251,6 +251,9 @@ class LicenseManager {
                     <p style="color: #94a3b8; font-size: 0.9rem;">
                         Attiva una licenza premium per sbloccare tutte le funzionalità
                     </p>
+                    <a href="https://payhip.com/b/yoOFn" target="_blank" style="display: block; margin-top: 1rem; color: #6366f1; font-weight: 600; text-decoration: none;">
+                        🛒 Acquista una Licenza
+                    </a>
                 </div>
             `;
             formDiv.style.display = 'flex';
