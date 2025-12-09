@@ -280,8 +280,7 @@
         }
 
         .options-panel.open .options-content {
-            max-height: 800px;
-            /* Increased to prevent cutoff */
+            max-height: 500px;
         }
 
         .option-row {
@@ -295,6 +294,8 @@
         .option-label {
             font-size: 14px;
             color: var(--text-dim);
+            flex: 1;
+            padding-right: 12px;
         }
 
         /* Toggle Switch */
@@ -703,10 +704,7 @@
 
         .slider {
             flex: 1;
-            flex: 1;
             -webkit-appearance: none;
-            appearance: none;
-            height: 6px;
             height: 6px;
             background: var(--bg-elevated);
             border-radius: 3px;
@@ -819,35 +817,6 @@
                 opacity: 1;
             }
         }
-
-        /* Reveal Mask */
-        .reveal-mask {
-            background: var(--bg-elevated);
-            border: 1px dashed var(--accent);
-            color: transparent !important;
-            border-radius: 8px;
-            cursor: pointer;
-            position: relative;
-            user-select: none;
-            transition: all 0.2s;
-        }
-
-        .reveal-mask::after {
-            content: "Tocca per svelare";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: var(--accent);
-            font-size: 12px;
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        .reveal-mask:active {
-            transform: scale(0.98);
-            background: var(--bg-card);
-        }
     </style>
 </head>
 
@@ -936,10 +905,6 @@
                         <div class="chord-chip premium-chip" data-type="min13">Min13</div>
                     </div>
                     <div class="option-row">
-                        <span class="option-label">🙈 Nascondi Risposta</span>
-                        <div class="toggle-switch" id="toggleHideChordName" onclick="toggleSwitch(this)"></div>
-                    </div>
-                    <div class="option-row">
                         <span class="option-label">🔄 Inversioni</span>
                         <div class="toggle-switch" id="toggleInversions" onclick="toggleSwitch(this)"></div>
                     </div>
@@ -948,8 +913,13 @@
                         <div class="toggle-switch active" id="toggleAutoPlay" onclick="toggleSwitch(this)"></div>
                     </div>
                     <div class="option-row">
-                        <span class="option-label">⏭️ Avanza Auto</span>
+                        <span class="option-label">⏭️ Avanza Automatico</span>
                         <div class="toggle-switch active" id="toggleAutoAdvance" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    <div class="option-row">
+                        <span class="option-label">👁️ Nascondi Nome Accordo</span>
+                        <div class="toggle-switch" id="toggleHideChordSetting" onclick="toggleHideChordFromMenu(this)">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1002,7 +972,10 @@
             <!-- Exercise Card (Moved) -->
             <div class="exercise-card hidden" id="exerciseCard" style="margin-bottom: 1rem;">
                 <div class="exercise-label">
-                    <span id="exerciseLabelText">Accordo corrente</span>
+                    Accordo corrente
+                    <button class="toggle-btn" id="hideChordBtn" onclick="toggleHideChord()">
+                        👁️ Nascondi
+                    </button>
                 </div>
                 <div class="exercise-name" id="exerciseName">C Maggiore</div>
                 <button class="listen-btn" id="listenBtn">
@@ -1132,10 +1105,18 @@
             tab.addEventListener('click', () => {
                 document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
+
+                const mode = tab.dataset.mode;
+                document.getElementById('chordOptions').classList.toggle('hidden', mode !== 'chords');
+                document.getElementById('scaleOptions').classList.toggle('hidden', mode !== 'scales');
+
+                // Update exercise label
+                document.querySelector('.exercise-label').textContent =
+                    mode === 'chords' ? 'Accordo corrente' : 'Melodia corrente';
             });
         });
 
-        // Bottom Nav
+        // Bottom nav
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', () => {
                 document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
@@ -1148,40 +1129,51 @@
             });
         });
 
-        // Toggle Hide Chord
-        function toggleHideChord() {
+        // Helper to set state everywhere
+        function setHideChordState(hide) {
             const btn = document.getElementById('hideChordBtn');
             const name = document.getElementById('exerciseName');
-            const isHidden = btn.classList.contains('active');
+            const settingSwitch = document.getElementById('toggleHideChordSetting');
 
-            if (isHidden) {
-                // Show
-                btn.classList.remove('active');
-                name.classList.remove('hidden');
-                btn.innerHTML = '👁️ Nascondi';
-                localStorage.setItem('hideChord', 'false');
-            } else {
-                // Hide
-                btn.classList.add('active');
-                name.classList.add('hidden');
-                btn.innerHTML = '👁️ Mostra';
+            if (hide) {
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '👁️ Mostra';
+                }
+                if (name) name.classList.add('hidden');
+                if (settingSwitch) settingSwitch.classList.add('active');
                 localStorage.setItem('hideChord', 'true');
+            } else {
+                if (btn) {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '👁️ Nascondi';
+                }
+                if (name) name.classList.remove('hidden');
+                if (settingSwitch) settingSwitch.classList.remove('active');
+                localStorage.setItem('hideChord', 'false');
             }
-            // Trigger app update if needed
+        }
+
+        // Toggle Hide Chord from Card Button
+        function toggleHideChord() {
+            // Check current state from button class
+            const btn = document.getElementById('hideChordBtn');
+            const currentState = btn.classList.contains('active');
+            setHideChordState(!currentState);
+        }
+
+        // Toggle Hide Chord from Menu Switch
+        function toggleHideChordFromMenu(el) {
+            // Check current state from switch class
+            const currentState = el.classList.contains('active');
+            setHideChordState(!currentState);
         }
 
         // Initialize Hide Chord state
         if (localStorage.getItem('hideChord') === 'true') {
-            const btn = document.getElementById('hideChordBtn');
-            const name = document.getElementById('exerciseName');
-            if (btn && name) {
-                btn.classList.add('active');
-                name.classList.add('hidden');
-                btn.innerHTML = '👁️ Mostra';
-            }
+            setHideChordState(true);
         } else {
-            const btn = document.getElementById('hideChordBtn');
-            if (btn) btn.innerHTML = '👁️ Nascondi';
+            setHideChordState(false);
         }
 
         // Octave control REMOVED - Fixed 1.5 octaves

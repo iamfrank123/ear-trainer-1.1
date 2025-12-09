@@ -101,11 +101,12 @@ class EarTrainingApp {
         const scaleOptions = document.getElementById('scaleOptions');
 
         if (chordOptions && scaleOptions) {
+            // Su mobile usiamo classes (gestite anche da script inline, ma sincronizziamo qui)
             chordOptions.classList.toggle('hidden', mode !== 'chords');
             scaleOptions.classList.toggle('hidden', mode !== 'scales');
 
             // Aggiorna label esercizio su mobile
-            const label = document.querySelector('.exercise-label #exerciseLabelText');
+            const label = document.querySelector('.exercise-label');
             if (label) {
                 label.textContent = mode === 'chords' ? 'Accordo corrente' : 'Melodia corrente';
             }
@@ -121,6 +122,7 @@ class EarTrainingApp {
     // CHORD SELECTION
     // ====================================
 
+    // Mappatura tipi mobile verso categoria/tipo del generator
     mobileChordTypeMap = {
         'major': { category: 'triads', type: 'major' },
         'minor': { category: 'triads', type: 'minor' },
@@ -142,18 +144,22 @@ class EarTrainingApp {
     };
 
     setupChordSelection() {
+        // Desktop checkboxes
         const checkboxes = document.querySelectorAll('.chord-checkbox');
+
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', () => {
                 const category = checkbox.dataset.category;
                 const type = checkbox.dataset.type;
 
+                // Verifica se categoria premium è accessibile
                 if (!licenseManager.canUseChordCategory(category) && checkbox.checked) {
                     checkbox.checked = false;
                     alert('🔒 Questa categoria richiede una licenza Premium!');
                     return;
                 }
 
+                // Aggiorna selezione
                 if (checkbox.checked) {
                     this.addChordToSelection(category, type);
                 } else {
@@ -165,23 +171,28 @@ class EarTrainingApp {
             });
         });
 
+        // Mobile chord chips
         this.setupMobileChordChips();
     }
 
     setupMobileChordChips() {
         const chordChips = document.querySelectorAll('.chord-chip');
+
         if (chordChips.length === 0) return;
+
+        console.log('📱 Setup mobile chord chips...');
 
         chordChips.forEach(chip => {
             const mobileType = chip.dataset.type;
             const mapping = this.mobileChordTypeMap[mobileType];
 
-            // Inizializza se già selezionato
+            // Inizializza se già selezionato (classe 'selected' presente)
             if (mapping && chip.classList.contains('selected')) {
                 this.addChordToSelection(mapping.category, mapping.type);
             }
 
             chip.addEventListener('click', (e) => {
+                // PREMIUM LOCK CHECK
                 if (chip.classList.contains('locked')) {
                     e.preventDefault();
                     e.stopPropagation();
@@ -190,6 +201,11 @@ class EarTrainingApp {
                 }
 
                 if (!mapping) return;
+
+                // Simple visual toggle logic is handled by mobile.html script usually,
+                // BUT we need to sync state. 
+                // Let's assume the click DOES toggle the class 'selected' due to other scripts or default behavior.
+                // We just update logic.
 
                 setTimeout(() => {
                     const isSelected = chip.classList.contains('selected');
@@ -225,24 +241,37 @@ class EarTrainingApp {
         }
     }
 
+    // ====================================
+    // PREMIUM FEATURES LOGIC
+    // ====================================
     setupPremiumFeatures() {
+        // 1. CHORD CHIPS LOCKING
         this.updatePremiumLocks();
+
+        // 2. TONALITY LOCKING
         const chordRoot = document.getElementById('chordRoot');
         if (chordRoot) {
             chordRoot.addEventListener('change', (e) => {
                 const selected = e.target.value;
                 const status = licenseManager.getStatus();
+
                 if (!status.isActivated && selected !== 'C' && selected !== '') {
+                    // Force Reset to C
                     e.target.value = 'C';
                     this.showPremiumModal();
                 }
             });
         }
+        // Listen for License Updates
+        // LicenseManager should ideally emit events or we just update on UI update.
+        // We can hook into updateUI?
+        // Or simply checking status on interaction is enough, plus initial update.
     }
 
     updatePremiumLocks() {
         const status = licenseManager.getStatus();
         const chips = document.querySelectorAll('.chord-chip');
+
         chips.forEach(chip => {
             const isPremium = chip.classList.contains('premium-chip');
             if (isPremium && !status.isActivated) {
@@ -254,14 +283,24 @@ class EarTrainingApp {
     }
 
     showPremiumModal() {
-        const modal = document.getElementById('licenseModal');
-        if (modal) {
-            modal.classList.add('active');
-        } else {
-            alert('🌟 Funzionalità Premium! Attiva la licenza per sbloccare.');
+        // Trigger generic modal open if possible
+        const licenseDiv = document.getElementById('licenseStatus');
+        if (licenseDiv) {
+            // Simulate click? Or open modal directly.
+            // Mobile.html: <div class="modal-overlay" id="licenseModal">
+            const modal = document.getElementById('licenseModal');
+            if (modal) {
+                modal.classList.add('active');
+            } else {
+                // Fallback to alert if modal not found
+                alert('🌟 Funzionalità Premium! Attiva la licenza per sbloccare.');
+            }
         }
     }
 
+    // ====================================
+    // PWA INSTALL PROMPT
+    // ====================================
     setupPWAPrompt() {
         let deferredPrompt;
         const pwaPrompt = document.getElementById('pwaPrompt');
@@ -277,11 +316,15 @@ class EarTrainingApp {
             installBtn.addEventListener('click', async () => {
                 if (deferredPrompt) {
                     deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to the install prompt: ${outcome}`);
                     deferredPrompt = null;
                     if (pwaPrompt) pwaPrompt.classList.remove('visible');
                 }
             });
         }
+
+        // Dismiss logic? (Optional, maybe add a close X later)
         if (pwaPrompt) {
             pwaPrompt.addEventListener('click', (e) => {
                 if (e.target === pwaPrompt) pwaPrompt.classList.remove('visible');
@@ -289,7 +332,12 @@ class EarTrainingApp {
         }
     }
 
+    // ====================================
+    // SCALE CONTROLS
+    // ====================================
+
     setupScaleControls() {
+        // Melody length slider
         const melodyLengthSlider = document.getElementById('melodyLength');
         const melodyLengthValue = document.getElementById('melodyLengthValue');
 
@@ -297,18 +345,22 @@ class EarTrainingApp {
             melodyLengthSlider.addEventListener('input', (e) => {
                 const maxLength = licenseManager.getMaxMelodyLength();
                 let value = parseInt(e.target.value);
+
                 if (value > maxLength) {
                     value = maxLength;
                     e.target.value = maxLength;
                     alert(`🔒 Melodie oltre ${maxLength} note richiedono licenza Premium!`);
                 }
+
                 if (melodyLengthValue) melodyLengthValue.textContent = value;
                 this.saveSettings();
             });
         }
 
+        // Melody speed slider
         const melodySpeedSlider = document.getElementById('melodySpeed');
         const melodySpeedValue = document.getElementById('melodySpeedValue');
+
         if (melodySpeedSlider) {
             melodySpeedSlider.addEventListener('input', (e) => {
                 if (melodySpeedValue) melodySpeedValue.textContent = e.target.value;
@@ -316,14 +368,21 @@ class EarTrainingApp {
             });
         }
 
+        // Scale root select
         const scaleRoot = document.getElementById('scaleRoot');
         if (scaleRoot) {
             scaleRoot.addEventListener('change', () => this.saveSettings());
         }
+
+        // Include chord checkbox
+        const includeChord = document.getElementById('includeChord');
+        if (includeChord) {
+            includeChord.addEventListener('change', () => this.saveSettings());
+        }
     }
 
     // ====================================
-    // SETTINGS & UI CONTROLS
+    // AUTO PLAY & AUTO ADVANCE TOGGLES
     // ====================================
 
     setupAutoPlayToggle() {
@@ -331,6 +390,7 @@ class EarTrainingApp {
         if (autoPlayToggle) {
             autoPlayToggle.addEventListener('change', () => this.saveSettings());
         }
+
         const autoPlayChordsToggle = document.getElementById('autoPlayChordsToggle');
         if (autoPlayChordsToggle) {
             autoPlayChordsToggle.addEventListener('change', () => this.saveSettings());
@@ -342,26 +402,15 @@ class EarTrainingApp {
         if (autoAdvanceToggle) {
             autoAdvanceToggle.addEventListener('change', () => this.saveSettings());
         }
+
         const autoAdvanceChordsToggle = document.getElementById('autoAdvanceChordsToggle');
         if (autoAdvanceChordsToggle) {
             autoAdvanceChordsToggle.addEventListener('change', () => this.saveSettings());
         }
     }
 
-    setupHideNameToggle() {
-        const toggle = document.getElementById('hideNameToggle'); // Desktop
-        if (toggle) {
-            toggle.addEventListener('change', () => this.saveSettings());
-        }
-        const mobileToggle = document.getElementById('toggleHideChordName'); // Mobile
-        if (mobileToggle) {
-            mobileToggle.addEventListener('click', () => {
-                setTimeout(() => this.saveSettings(), 50);
-            });
-        }
-    }
-
     isAutoPlayEnabled() {
+        // Desktop checkboxes
         if (this.currentMode === 'chords') {
             const toggle = document.getElementById('autoPlayChordsToggle');
             if (toggle && toggle.checked !== undefined) return toggle.checked;
@@ -369,14 +418,24 @@ class EarTrainingApp {
             const toggle = document.getElementById('autoPlayToggle');
             if (toggle && toggle.checked !== undefined) return toggle.checked;
         }
+
+        // Mobile toggle switches (use class 'active')
         const mobileToggle = document.getElementById('toggleAutoPlay');
-        if (mobileToggle && mobileToggle.classList.contains('active')) return true;
+        if (mobileToggle) {
+            return mobileToggle.classList.contains('active');
+        }
+
+        // Scale mode mobile toggle
         const mobileScaleToggle = document.getElementById('toggleScaleAutoPlay');
-        if (mobileScaleToggle && mobileScaleToggle.classList.contains('active')) return true;
+        if (mobileScaleToggle) {
+            return mobileScaleToggle.classList.contains('active');
+        }
+
         return false;
     }
 
     isAutoAdvanceEnabled() {
+        // Desktop checkboxes
         if (this.currentMode === 'chords') {
             const toggle = document.getElementById('autoAdvanceChordsToggle');
             if (toggle && toggle.checked !== undefined) return toggle.checked;
@@ -384,10 +443,19 @@ class EarTrainingApp {
             const toggle = document.getElementById('autoAdvanceToggle');
             if (toggle && toggle.checked !== undefined) return toggle.checked;
         }
+
+        // Mobile toggle switches (use class 'active')
         const mobileToggle = document.getElementById('toggleAutoAdvance');
-        if (mobileToggle && mobileToggle.classList.contains('active')) return true;
+        if (mobileToggle) {
+            return mobileToggle.classList.contains('active');
+        }
+
         return false;
     }
+
+    // ====================================
+    // START BUTTON
+    // ====================================
 
     setupStartButton() {
         const startBtn = document.getElementById('startBtn');
@@ -399,16 +467,389 @@ class EarTrainingApp {
     updateStartButton() {
         const startBtn = document.getElementById('startBtn');
         if (!startBtn) return;
+
         let canStart = false;
+
         if (this.currentMode === 'chords') {
+            // Check se almeno un accordo è selezionato
             const totalSelected = Object.values(this.selectedChordCategories)
                 .reduce((sum, arr) => sum + arr.length, 0);
             canStart = totalSelected > 0;
         } else {
+            // Scale mode: sempre pronto
             canStart = true;
         }
+
         startBtn.disabled = !canStart;
-        startBtn.classList.toggle('disabled', !canStart);
+    }
+
+    // ====================================
+    // EXERCISE GENERATION & EXECUTION
+    // ====================================
+
+    startExercise() {
+        // Reset stato precedente
+        this.hideExerciseDisplay();
+        this.hideFeedback();
+        exerciseEvaluator.reset();
+        midiHandler.resetCurrentNotes();
+        this.clearVirtualKeyboard();
+
+        // Genera esercizio in base alla modalità
+        let exercise = null;
+        let mode = null;
+
+        if (this.currentMode === 'chords') {
+            // Log delle categorie selezionate per debugging
+            console.log('📋 Categorie selezionate:', this.selectedChordCategories);
+
+            const totalSelected = Object.values(this.selectedChordCategories)
+                .reduce((sum, arr) => sum + arr.length, 0);
+
+            console.log(`📊 Totale accordi selezionati: ${totalSelected}`);
+
+            if (totalSelected === 0) {
+                alert('⚠️ Seleziona almeno un tipo di accordo prima di iniziare!');
+                return;
+            }
+
+            // [NEW] Leggi tonality opzionale
+            const chordRootElem = document.getElementById('chordRoot');
+            const chordRootKey = chordRootElem ? chordRootElem.value : null;
+
+            exercise = exerciseGenerator.generateChord(this.selectedChordCategories, chordRootKey);
+            mode = 'chord';
+        } else {
+            const scaleRoot = document.getElementById('scaleRoot').value;
+            const melodyLength = parseInt(document.getElementById('melodyLength').value);
+
+            // Parametri opzionali (safe navigation)
+            const includeChordElem = document.getElementById('includeChord');
+            const includeChord = includeChordElem ? includeChordElem.checked : false;
+
+            // Gestione mista desktop/mobile per Tonica
+            const startWithTonicElem = document.getElementById('startWithTonic');
+            const toggleTonicElem = document.getElementById('toggleTonic');
+
+            let startWithTonic = false;
+            if (startWithTonicElem) {
+                startWithTonic = startWithTonicElem.checked;
+            } else if (toggleTonicElem) {
+                startWithTonic = toggleTonicElem.classList.contains('active');
+            }
+
+            if (includeChord) {
+                exercise = exerciseGenerator.generateCombinedExercise(scaleRoot, melodyLength, startWithTonic);
+                mode = 'combined';
+            } else {
+                exercise = exerciseGenerator.generateMelody(scaleRoot, melodyLength, startWithTonic);
+                mode = 'melody';
+            }
+        }
+
+        if (!exercise) {
+            alert('❌ Errore nella generazione dell\'esercizio');
+            return;
+        }
+
+        this.currentExercise = exercise;
+        this.isExerciseActive = true;
+
+        console.log('🎯 Esercizio generato:', exercise);
+
+        // Mostra esercizio
+        this.showExerciseDisplay(exercise);
+
+        // Inizia valutazione
+        exerciseEvaluator.startExercise(exercise, mode);
+
+        console.log('▶️ Esercizio avviato. In attesa di input MIDI...');
+
+        // Auto-play se abilitato
+        if (this.isAutoPlayEnabled()) {
+            setTimeout(() => {
+                this.playCurrentExercise();
+            }, 500);
+        }
+    }
+
+    // ====================================
+    // EXERCISE DISPLAY
+    // ====================================
+
+    showExerciseDisplay(exercise) {
+        // Desktop elements
+        const display = document.getElementById('exerciseDisplay');
+        const typeElement = document.getElementById('exerciseType');
+
+        if (display && typeElement) {
+            typeElement.textContent = exercise.fullName;
+            display.style.display = 'block';
+        }
+
+        // Mobile elements
+        const card = document.getElementById('exerciseCard');
+        const nameElement = document.getElementById('exerciseName');
+        const startSection = document.getElementById('startSection');
+
+        if (card && nameElement) {
+            nameElement.textContent = exercise.fullName;
+            card.classList.remove('hidden');
+            // Manteniamo visibile il bottone Start per permettere il riavvio con nuove impostazioni
+            // if (startSection) startSection.classList.add('hidden'); 
+        }
+
+        // Reset listen button (common)
+        const listenBtn = document.getElementById('listenBtn');
+        if (listenBtn) {
+            listenBtn.classList.remove('playing');
+            listenBtn.disabled = false;
+        }
+    }
+
+    hideExerciseDisplay() {
+        // Desktop
+        const display = document.getElementById('exerciseDisplay');
+        if (display) {
+            display.style.display = 'none';
+        }
+
+        // Mobile
+        const card = document.getElementById('exerciseCard');
+        const startSection = document.getElementById('startSection');
+        if (card) {
+            card.classList.add('hidden');
+            if (startSection) startSection.classList.remove('hidden');
+        }
+    }
+
+    // ====================================
+    // FEEDBACK DISPLAY
+    // ====================================
+
+    showFeedback(result) {
+        const feedbackDiv = document.getElementById('feedbackDisplay');
+        if (!feedbackDiv) return;
+
+        const feedback = exerciseEvaluator.generateFeedback(result);
+
+        feedbackDiv.className = `feedback-display ${feedback.type}`;
+        feedbackDiv.innerHTML = `
+            <h3 class="feedback-title" style="color: ${feedback.type === 'success' ? '#10b981' : '#ef4444'}">
+                ${feedback.title}
+            </h3>
+            <p class="feedback-message">${feedback.message}</p>
+            <button class="primary-btn" onclick="app.startExercise()" style="margin-top: 1rem;">
+                Prossimo Esercizio
+            </button>
+        `;
+        feedbackDiv.style.display = 'block';
+
+        // Nascondi exercise display
+        this.hideExerciseDisplay();
+    }
+
+    hideFeedback() {
+        const feedbackDiv = document.getElementById('feedbackDisplay');
+        if (feedbackDiv) {
+            feedbackDiv.style.display = 'none';
+        }
+    }
+
+    // ====================================
+    // EXERCISE COMPLETION
+    // ====================================
+
+    handleExerciseComplete(result) {
+        console.log('🏁 Esercizio completato:', result);
+
+        this.isExerciseActive = false;
+
+        if (result.isCorrect) {
+            // ✅ SUCCESSO - Vai al prossimo se auto-advance è attivo
+            if (this.isAutoAdvanceEnabled()) {
+                // Mostra brevemente il successo
+                this.showFeedback(result);
+
+                // Avanza automaticamente dopo 1 secondo
+                setTimeout(() => {
+                    this.startExercise();
+                }, 1000);
+            } else {
+                // Mostra feedback normale
+                this.showFeedback(result);
+            }
+        } else {
+            // ❌ ERRORE - Mostra feedback e RIPROVA LA STESSA MELODIA
+            this.showFeedback(result);
+
+            // Riprova automaticamente la stessa melodia dopo 1.5 secondi
+            setTimeout(() => {
+                // Reset UI
+                this.hideFeedback();
+                this.clearVirtualKeyboard();
+                exerciseEvaluator.reset();
+                midiHandler.resetCurrentNotes();
+
+                // Riavvia lo STESSO esercizio
+                this.isExerciseActive = true;
+                this.showExerciseDisplay(this.currentExercise);
+                exerciseEvaluator.startExercise(this.currentExercise, exerciseEvaluator.evaluationMode || this.getExerciseMode());
+
+                // Auto-play se abilitato
+                if (this.isAutoPlayEnabled()) {
+                    setTimeout(() => {
+                        this.playCurrentExercise();
+                    }, 300);
+                }
+
+                console.log('🔄 Riprova lo stesso esercizio...');
+            }, 1500);
+        }
+    }
+
+    // ====================================
+    // MIDI HANDLERS
+    // ====================================
+
+    setupMIDIHandlers() {
+        // Quando nota viene suonata
+        midiHandler.onNoteOn = (noteData) => {
+            console.log('🎹 Note ON:', noteData);
+
+            // Visual Feedback anche se esercizio non è attivo
+            const midiNote = noteData.note;
+            const keyElement = document.querySelector(`.piano-key[data-note="${midiNote}"]`);
+            if (keyElement) keyElement.classList.add('active');
+
+            // Se esercizio non è attivo, stop qui
+            if (!this.isExerciseActive) return;
+
+            const isChordMode = this.currentMode === 'chords' || this.currentMode === 'combined';
+
+            if (isChordMode) {
+                // CHORD MODE
+                const status = exerciseEvaluator.checkNote(midiNote);
+
+                if (status === 'correct') {
+                    // ✅ Nota corretta
+                    if (keyElement) keyElement.classList.add('correct');
+                    exerciseEvaluator.addNote(midiNote);
+                    // checkCompletion è chiamato dentro addNote
+                } else if (status === 'incorrect') {
+                    // ❌ Nota sbagliata - STOP IMMEDIATO
+                    if (keyElement) keyElement.classList.add('incorrect');
+
+                    const result = {
+                        isCorrect: false,
+                        exercise: this.currentExercise,
+                        userAnswer: [],
+                        expectedPitchClasses: this.currentExercise.pitchClasses,
+                        timeTaken: Date.now() - exerciseEvaluator.startTime,
+                        mode: 'chord'
+                    };
+
+                    exerciseEvaluator.isEvaluating = false;
+                    this.handleExerciseComplete(result);
+                }
+            } else {
+                // MELODY MODE
+                const isCorrectSequential = exerciseEvaluator.checkSequentialNote(midiNote);
+
+                if (isCorrectSequential) {
+                    // ✅ Nota corretta nella sequenza
+                    if (keyElement) keyElement.classList.add('correct');
+                    exerciseEvaluator.advanceMelodyIndex();
+                    exerciseEvaluator.addNote(midiNote);
+                } else {
+                    // ❌ Nota fuori sequenza o sbagliata - STOP IMMEDIATO
+                    if (keyElement) keyElement.classList.add('incorrect');
+
+                    const result = {
+                        isCorrect: false,
+                        exercise: this.currentExercise,
+                        userAnswer: [],
+                        expectedNotes: this.currentExercise.notes,
+                        timeTaken: Date.now() - exerciseEvaluator.startTime,
+                        mode: 'melody'
+                    };
+
+                    exerciseEvaluator.isEvaluating = false;
+                    this.handleExerciseComplete(result);
+                }
+            }
+        };
+
+        // Quando nota viene rilasciata
+        midiHandler.onNoteOff = (noteData) => {
+            console.log('🎹 Note OFF:', noteData);
+            const keyElement = document.querySelector(`.piano-key[data-note="${noteData.note}"]`);
+            if (keyElement) {
+                keyElement.classList.remove('active', 'correct', 'incorrect');
+            }
+        };
+    }
+
+    // ====================================
+    // LICENSE MODAL
+    // ====================================
+
+    setupLicenseModal() {
+        const licenseBtn = document.getElementById('licenseBtn');
+        const modal = document.getElementById('licenseModal');
+        const closeBtn = document.getElementById('closeLicenseModal');
+        const overlay = modal?.querySelector('.modal-overlay');
+
+        if (licenseBtn && modal) {
+            licenseBtn.addEventListener('click', () => {
+                modal.classList.add('active');
+                licenseManager.updateUI();
+            });
+        }
+
+        if (closeBtn && modal) {
+            closeBtn.addEventListener('click', () => {
+                modal.classList.remove('active');
+            });
+        }
+
+        if (overlay && modal) {
+            overlay.addEventListener('click', () => {
+                modal.classList.remove('active');
+            });
+        }
+
+        // [NEW] Activate License Logic
+        const activateBtn = document.getElementById('activateLicenseBtn');
+        const licenseInput = document.getElementById('licenseInput');
+
+        if (activateBtn && licenseInput) {
+            activateBtn.addEventListener('click', async () => {
+                const code = licenseInput.value;
+                activateBtn.disabled = true;
+                activateBtn.textContent = 'Verifica in corso...';
+
+                try {
+                    const result = await licenseManager.activateLicense(code);
+                    if (result.success) {
+                        licenseManager.showMessage(result.message, 'success');
+                        document.getElementById('licenseForm').style.display = 'none'; // Hide immediately on success
+
+                        // [FIX] Update mobile chips and locks immediately
+                        this.updatePremiumLocks();
+                        this.setupPremiumFeatures(); // Re-bind any changed elements if needed
+                    } else {
+                        licenseManager.showMessage(result.message, 'error');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    licenseManager.showMessage('Errore imprevisto', 'error');
+                } finally {
+                    activateBtn.disabled = false;
+                    activateBtn.textContent = 'Attiva Licenza';
+                }
+            });
+        }
     }
 
     setupAccordion() {
@@ -416,7 +857,12 @@ class EarTrainingApp {
         headers.forEach(header => {
             header.addEventListener('click', () => {
                 const item = header.parentElement;
-                item.classList.toggle('active');
+                const isActive = item.classList.contains('active');
+                if (!isActive) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
             });
         });
     }
@@ -428,241 +874,73 @@ class EarTrainingApp {
         }
     }
 
-    setupLicenseModal() {
-        const licenseBtn = document.getElementById('navLicense') || document.getElementById('licenseBtn');
-        const modal = document.getElementById('licenseModal');
-        // Mobile.html uses specific selectors sometimes, ensure compatibility
-        // The mobile.html has inline script for modal handling, calling openModal('licenseModal')
-        // We just need to handle logic if any. 
-        // Logic for activation:
-        const activateBtn = document.getElementById('activateLicenseBtn');
-        const licenseInput = document.getElementById('licenseInput');
-        if (activateBtn && licenseInput) {
-            activateBtn.addEventListener('click', async () => {
-                const code = licenseInput.value;
-                activateBtn.disabled = true;
-                activateBtn.textContent = 'Verifica...';
-                try {
-                    const result = await licenseManager.activateLicense(code);
-                    if (result.success) {
-                        licenseManager.showMessage(result.message, 'success');
-                        document.getElementById('licenseForm').style.display = 'none';
-                        this.updatePremiumLocks();
-                    } else {
-                        licenseManager.showMessage(result.message, 'error');
-                    }
-                } catch (e) {
-                    console.error(e);
-                } finally {
-                    activateBtn.disabled = false;
-                    activateBtn.textContent = 'Attiva Licenza';
+    setupHideNameToggle() {
+        const toggle = document.getElementById('hideNameToggle');
+        if (toggle) {
+            toggle.addEventListener('change', () => {
+                const exerciseName = document.getElementById('exerciseName');
+                if (exerciseName) {
+                    exerciseName.classList.toggle('blurred', toggle.checked);
+                }
+                const typeElement = document.getElementById('exerciseType');
+                if (typeElement) {
+                    typeElement.classList.toggle('blurred', toggle.checked);
                 }
             });
         }
     }
 
-    // ====================================
-    // EXERCISE LOGIC
-    // ====================================
-
-    startExercise() {
-        this.hideExerciseDisplay();
-        this.hideFeedback();
-        exerciseEvaluator.reset();
-        midiHandler.resetCurrentNotes();
-        this.clearVirtualKeyboard();
-
-        let exercise = null;
-        let mode = null;
-
-        if (this.currentMode === 'chords') {
-            const total = Object.values(this.selectedChordCategories).reduce((a, b) => a + b.length, 0);
-            if (total === 0) {
-                alert('Seleziona almeno un accordo');
-                return;
-            }
-            const root = document.getElementById('chordRoot')?.value || '';
-            exercise = exerciseGenerator.generateChord(this.selectedChordCategories, root);
-            mode = 'chord';
-        } else {
-            const root = document.getElementById('scaleRoot')?.value || 'C';
-            const len = parseInt(document.getElementById('melodyLength')?.value || 4);
-            const tonicToggle = document.getElementById('toggleTonic');
-            const isTonic = tonicToggle ? tonicToggle.classList.contains('active') : false;
-            exercise = exerciseGenerator.generateMelody(root, len, isTonic);
-            mode = 'melody';
-        }
-
-        if (!exercise) return;
-
-        this.currentExercise = exercise;
-        this.isExerciseActive = true;
-        console.log('Target:', exercise);
-
-        this.showExerciseDisplay(exercise);
-        exerciseEvaluator.startExercise(exercise, mode);
-
-        if (this.isAutoPlayEnabled()) {
-            setTimeout(() => this.playCurrentExercise(), 500);
-        }
-    }
-
-    showExerciseDisplay(exercise) {
-        // Desktop
-        const display = document.getElementById('exerciseDisplay');
-        const typeElement = document.getElementById('exerciseType');
-        if (display && typeElement) {
-            typeElement.textContent = exercise.fullName;
-            display.style.display = 'block';
-        }
-
-        // Mobile
-        const card = document.getElementById('exerciseCard');
-        const nameElement = document.getElementById('exerciseName');
-        const startSection = document.getElementById('startSection');
-
-        if (card && nameElement) {
-            nameElement.textContent = exercise.fullName;
-            card.classList.remove('hidden');
-            if (startSection) startSection.classList.add('hidden');
-
-            // HIDE LOGIC
-            const hideToggle = document.getElementById('toggleHideChordName');
-            const shouldHide = hideToggle && hideToggle.classList.contains('active');
-
-            if (shouldHide) {
-                nameElement.classList.add('reveal-mask');
-                // Remove listener to avoid duplicates? Better replace node or use named handler
-                // Simple implementation: clone to clear listeners
-                const newNameElement = nameElement.cloneNode(true);
-                nameElement.parentNode.replaceChild(newNameElement, nameElement);
-
-                newNameElement.addEventListener('click', function handler() {
-                    newNameElement.classList.remove('reveal-mask');
-                    newNameElement.removeEventListener('click', handler);
-                });
-            } else {
-                nameElement.classList.remove('reveal-mask');
-                // Also clear listeners if any?
-                const newNameElement = nameElement.cloneNode(true);
-                nameElement.parentNode.replaceChild(newNameElement, nameElement);
-            }
-        }
-
-        const listenBtn = document.getElementById('listenBtn');
-        if (listenBtn) {
-            listenBtn.classList.remove('playing');
-            listenBtn.disabled = false;
-        }
-    }
-
-    hideExerciseDisplay() {
-        const display = document.getElementById('exerciseDisplay');
-        if (display) display.style.display = 'none';
-
-        const card = document.getElementById('exerciseCard');
-        const startSection = document.getElementById('startSection');
-        if (card) {
-            card.classList.add('hidden');
-            if (startSection) startSection.classList.remove('hidden');
-        }
-    }
-
-    showFeedback(result) {
-        const feedbackDiv = document.getElementById('feedbackDisplay'); // Desktop mainly?
-        // On mobile we might want a different feedback or reuse same.
-        // Assuming desktop container for now or one injected into mobile.
-        // Mobile might check if exists.
-        if (!feedbackDiv) return;
-
-        const feedback = exerciseEvaluator.generateFeedback(result);
-        feedbackDiv.className = `feedback-display ${feedback.type}`;
-        feedbackDiv.innerHTML = `
-            <h3 style="color:${feedback.type === 'success' ? '#10b981' : '#ef4444'}">${feedback.title}</h3>
-            <p>${feedback.message}</p>
-            <button onclick="app.startExercise()">Prossimo</button>
-        `;
-        feedbackDiv.style.display = 'block';
-        this.hideExerciseDisplay();
-    }
-
-    hideFeedback() {
-        const feedbackDiv = document.getElementById('feedbackDisplay');
-        if (feedbackDiv) feedbackDiv.style.display = 'none';
-    }
-
-    handleExerciseComplete(result) {
-        console.log('Result:', result);
-        this.isExerciseActive = false;
-
-        // Show visual feedback on keys?? already done in checkNote/checkSequentialNote
-
-        if (result.isCorrect) {
-            if (this.isAutoAdvanceEnabled()) {
-                // Show success briefly
-                // this.showFeedback(result); // Optional
-                setTimeout(() => this.startExercise(), 1000);
-            } else {
-                this.showFeedback(result);
-            }
-        } else {
-            this.showFeedback(result);
-
-            // Retry logic
-            setTimeout(() => {
-                this.hideFeedback();
-                this.clearVirtualKeyboard();
-                exerciseEvaluator.reset();
-                midiHandler.resetCurrentNotes();
-
-                this.isExerciseActive = true;
-                this.currentExercise = result.exercise; // Restore
-                this.showExerciseDisplay(this.currentExercise);
-                exerciseEvaluator.startExercise(this.currentExercise, result.mode);
-
-                if (this.isAutoPlayEnabled()) {
-                    setTimeout(() => this.playCurrentExercise(), 300);
-                }
-            }, 1500);
-        }
-    }
-
     async playCurrentExercise() {
         if (!this.currentExercise) return;
-        this.clearVirtualKeyboard(); // Visual reset
+
+        // Reset tastiera
+        this.clearVirtualKeyboard();
 
         const listenBtn = document.getElementById('listenBtn');
-        if (listenBtn) {
-            listenBtn.disabled = true;
-            listenBtn.classList.add('playing');
-        }
+        if (!listenBtn) return;
+
+        // Inizializza audio player (richiede user interaction)
+        await audioPlayer.initialize();
+
+        // Disabilita pulsante e mostra stato playing
+        listenBtn.disabled = true;
+        listenBtn.classList.add('playing');
 
         try {
-            if (!audioPlayer.isInitialized) await audioPlayer.initialize();
+            // Ottieni speed per melodie
+            const speed = parseFloat(document.getElementById('melodySpeed')?.value || 2);
 
-            const speed = parseFloat(document.getElementById('melodySpeed')?.value || 1.5);
+            // Riproduci esercizio
             const mode = exerciseEvaluator.evaluationMode || 'chord';
-
             await audioPlayer.playExercise(this.currentExercise, mode, speed);
-        } catch (e) {
-            console.error(e);
+
+            console.log('✅ Riproduzione completata');
+        } catch (error) {
+            console.error('❌ Errore riproduzione audio:', error);
         } finally {
-            if (listenBtn) {
-                listenBtn.disabled = false;
-                listenBtn.classList.remove('playing');
-            }
+            // Riabilita pulsante
+            listenBtn.disabled = false;
+            listenBtn.classList.remove('playing');
         }
+    }
+
+    getExerciseMode() {
+        // Fallback simple helper
+        return this.currentMode === 'chords' ? 'chord' : 'melody';
     }
 
     saveSettings() {
         const settings = {
             mode: this.currentMode,
             selectedChords: this.selectedChordCategories,
+            autoPlay: this.isAutoPlayEnabled(),
+            autoAdvance: this.isAutoAdvanceEnabled(),
+            // Salva altri setting relevant
             melodyLength: document.getElementById('melodyLength')?.value,
             scaleRoot: document.getElementById('scaleRoot')?.value,
+            // [NEW] Nuovi settings
             chordRoot: document.getElementById('chordRoot')?.value,
-            melodySpeed: document.getElementById('melodySpeed')?.value,
-            hideChordName: document.getElementById('toggleHideChordName')?.classList.contains('active')
+            melodySpeed: document.getElementById('melodySpeed')?.value
         };
         localStorage.setItem('earTrainerSettings', JSON.stringify(settings));
     }
@@ -672,241 +950,284 @@ class EarTrainingApp {
             const saved = localStorage.getItem('earTrainerSettings');
             if (saved) {
                 const settings = JSON.parse(saved);
-                if (settings.mode) this.switchMode(settings.mode);
-                if (settings.selectedChords) this.selectedChordCategories = settings.selectedChords;
 
-                const restoreVal = (id, val) => {
-                    const el = document.getElementById(id);
-                    if (el) el.value = val;
-                };
-
-                restoreVal('melodyLength', settings.melodyLength);
-                restoreVal('scaleRoot', settings.scaleRoot);
-                restoreVal('chordRoot', settings.chordRoot);
-                restoreVal('melodySpeed', settings.melodySpeed);
-
-                if (settings.hideChordName) {
-                    const el = document.getElementById('toggleHideChordName');
-                    if (el) el.classList.add('active');
+                // Restore mode
+                if (settings.mode) {
+                    this.switchMode(settings.mode);
                 }
 
-                // Update visuals
-                const lenVal = document.getElementById('melodyLengthValue');
-                if (lenVal && settings.melodyLength) lenVal.textContent = settings.melodyLength;
+                // Restore selected chords
+                if (settings.selectedChords) {
+                    this.selectedChordCategories = settings.selectedChords;
+                }
 
-                const spdVal = document.getElementById('melodySpeedValue');
-                if (spdVal && settings.melodySpeed) spdVal.textContent = settings.melodySpeed;
+                // Restore other settings
+                if (settings.melodyLength) {
+                    const el = document.getElementById('melodyLength');
+                    if (el) el.value = settings.melodyLength;
+                    const val = document.getElementById('melodyLengthValue');
+                    if (val) val.textContent = settings.melodyLength;
+                }
+
+                if (settings.scaleRoot) {
+                    const el = document.getElementById('scaleRoot');
+                    if (el) el.value = settings.scaleRoot;
+                }
+
+                if (settings.chordRoot) {
+                    const el = document.getElementById('chordRoot');
+                    if (el) el.value = settings.chordRoot;
+                }
+
+                if (settings.melodySpeed) {
+                    const el = document.getElementById('melodySpeed');
+                    if (el) el.value = settings.melodySpeed;
+                    const val = document.getElementById('melodySpeedValue');
+                    if (val) val.textContent = settings.melodySpeed;
+                }
 
                 this.updateStartButton();
+                console.log('✅ Impostazioni caricate:', settings);
             }
         } catch (e) {
-            console.error(e);
+            console.error('Error loading settings', e);
         }
     }
 
     // ====================================
-    // MIDI HANDLERS
-    // ====================================
-
-    setupMIDIHandlers() {
-        midiHandler.onNoteOn = (noteData) => {
-            const midiNote = noteData.note;
-            const keyElement = document.querySelector(`.piano-key[data-note="${midiNote}"], .note-btn[data-pitch="${midiNote % 12}"]`);
-            // Note: .note-btn uses pitch class 0-11. We need to match precise octave for piano-key, pitch for buttons
-
-            // Activate piano key
-            const exactKey = document.querySelector(`.piano-key[data-note="${midiNote}"]`);
-            if (exactKey) exactKey.classList.add('active');
-
-            // Activate button (any octave)
-            const pitch = midiNote % 12;
-            const btn = document.querySelector(`.note-btn[data-pitch="${pitch}"]`);
-            if (btn) btn.classList.add('active');
-
-            if (!this.isExerciseActive) return;
-
-            // Logic handling
-            const isChord = this.currentMode === 'chords';
-            if (isChord) {
-                const status = exerciseEvaluator.checkNote(midiNote);
-                if (status === 'correct') {
-                    if (exactKey) exactKey.classList.add('correct');
-                    if (btn) btn.classList.add('correct');
-                    exerciseEvaluator.addNote(midiNote);
-                } else if (status === 'incorrect') {
-                    if (exactKey) exactKey.classList.add('incorrect');
-                    if (btn) btn.classList.add('incorrect');
-                    this.handleExerciseComplete({
-                        isCorrect: false,
-                        exercise: this.currentExercise,
-                        userAnswer: [], // Simplified
-                        mode: 'chord'
-                    });
-                    exerciseEvaluator.isEvaluating = false;
-                }
-            } else {
-                const correct = exerciseEvaluator.checkSequentialNote(midiNote);
-                if (correct) {
-                    if (exactKey) exactKey.classList.add('correct');
-                    exerciseEvaluator.advanceMelodyIndex();
-                    if (exerciseEvaluator.isMelodyComplete()) {
-                        this.handleExerciseComplete({ isCorrect: true, exercise: this.currentExercise, mode: 'melody' });
-                    }
-                } else {
-                    if (exactKey) exactKey.classList.add('incorrect');
-                    this.handleExerciseComplete({ isCorrect: false, exercise: this.currentExercise, mode: 'melody' });
-                    exerciseEvaluator.isEvaluating = false;
-                }
-            }
-        };
-
-        midiHandler.onNoteOff = (noteData) => {
-            const midiNote = noteData.note;
-            const exactKey = document.querySelector(`.piano-key[data-note="${midiNote}"]`);
-            if (exactKey) exactKey.classList.remove('active', 'correct', 'incorrect');
-
-            const pitch = midiNote % 12;
-            const btn = document.querySelector(`.note-btn[data-pitch="${pitch}"]`);
-            if (btn) btn.classList.remove('active', 'correct', 'incorrect');
-        };
-    }
-
-    // ====================================
-    // VIRTUAL KEYBOARD NEW
+    // VIRTUAL KEYBOARD LOGIC
     // ====================================
 
     setupVirtualKeyboardNew() {
-        const clearBtn = document.getElementById('clearBtn');
+        // Clear Button (Desktop e Mobile)
+        const clearBtn = document.getElementById('clearKeyboardBtn') || document.getElementById('clearBtn');
         if (clearBtn) {
-            clearBtn.addEventListener('click', () => this.clearVirtualKeyboard());
+            clearBtn.addEventListener('click', () => {
+                this.clearVirtualKeyboard();
+            });
         }
+
+        // GENERAZIONE DINAMICA TASTIERA (Mobile)
         this.renderVirtualKeyboard();
+
+        // ATTACH LISTENERS (Unified for Mobile & Desktop)
+        // Crucial for Desktop: attach listeners to static .piano-key elements
         this.attachSmartTouchListeners();
+
+        console.log('🎹 Tastiera virtuale inizializzata (Unified)');
     }
 
     renderVirtualKeyboard() {
         const container = document.getElementById('pianoInner');
         if (!container) return;
-        container.innerHTML = '';
 
-        const start = 48; // C3
-        const end = 84;   // C6
+        container.innerHTML = ''; // Clear existing
+
+        const startNote = 48; // C3
+        const endNote = 84;   // C6
         const solfege = ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si'];
 
-        for (let n = start; n <= end; n++) {
-            const pitch = n % 12;
-            const isBlack = [1, 3, 6, 8, 10].includes(pitch);
-            const name = solfege[pitch];
-            const div = document.createElement('div');
-            div.className = isBlack ? 'piano-key black' : 'piano-key white';
-            div.dataset.note = n;
-            if (!isBlack) div.textContent = name.includes('#') ? '' : name;
-            container.appendChild(div);
+        for (let note = startNote; note <= endNote; note++) {
+            const pitchClass = note % 12;
+            const isBlack = [1, 3, 6, 8, 10].includes(pitchClass);
+            const noteName = solfege[pitchClass];
+
+            if (isBlack) {
+                const blackKey = document.createElement('div');
+                blackKey.className = 'piano-key black';
+                blackKey.dataset.note = note;
+                container.appendChild(blackKey);
+            } else {
+                const whiteKey = document.createElement('div');
+                whiteKey.className = 'piano-key white';
+                whiteKey.dataset.note = note;
+                whiteKey.textContent = noteName.includes('#') ? '' : noteName;
+                container.appendChild(whiteKey);
+            }
         }
 
+        // SCROLL INITIAL POSITION
         setTimeout(() => {
-            const outer = document.getElementById('pianoKeyboard');
-            if (outer) outer.scrollLeft = 200;
+            const pianoOuter = document.getElementById('pianoKeyboard');
+            if (pianoOuter) {
+                pianoOuter.scrollLeft = 200;
+            }
         }, 100);
     }
 
     attachSmartTouchListeners() {
+        // [MODIFIED] Selector now targets BOTH Mobile and Desktop keys, plus buttons.
         const keys = document.querySelectorAll('.piano-key, .note-btn');
-        let startX, startY;
+
+        let startX = 0;
+        let startY = 0;
         let isScrolling = false;
-        let isTap = false;
+        let isPotentialTap = false;
+        const TAP_THRESHOLD = 10;
 
         keys.forEach(key => {
-            key.addEventListener('pointerdown', e => {
+            key.addEventListener('pointerdown', (e) => {
                 startX = e.clientX;
                 startY = e.clientY;
-                isTap = true;
+                isPotentialTap = true;
                 isScrolling = false;
             });
-            key.addEventListener('pointermove', e => {
-                if (!isTap) return;
-                if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
-                    isTap = false;
+
+            key.addEventListener('pointermove', (e) => {
+                if (!isPotentialTap) return;
+
+                const diffX = Math.abs(e.clientX - startX);
+                const diffY = Math.abs(e.clientY - startY);
+
+                if (diffX > TAP_THRESHOLD || diffY > TAP_THRESHOLD) {
+                    isPotentialTap = false;
                     isScrolling = true;
                 }
             });
-            key.addEventListener('pointerup', e => {
-                if (isTap && !isScrolling) {
+
+            key.addEventListener('pointerup', (e) => {
+                if (isPotentialTap && !isScrolling) {
+                    // Tap / Click verified
                     let note = parseInt(key.dataset.note);
-                    if (isNaN(note)) { // Note button
-                        const p = parseInt(key.dataset.pitch);
-                        if (!isNaN(p)) note = 60 + p; // C4 base
+
+                    // Handle .note-btn which uses data-pitch (0-11)
+                    if (isNaN(note)) {
+                        const pitch = parseInt(key.dataset.pitch);
+                        if (!isNaN(pitch)) {
+                            note = 60 + pitch; // Default to C4 octave
+                        }
                     }
-                    if (!isNaN(note)) this.handleVirtualInputWithFeedback(note, key);
+
+                    if (!isNaN(note)) {
+                        this.handleVirtualInputWithFeedback(note, key);
+                    }
                 }
-                isTap = false;
+                // Reset
+                isPotentialTap = false;
+                isScrolling = false;
             });
-            key.addEventListener('pointercancel', () => isTap = false);
+
+            key.addEventListener('pointercancel', (e) => {
+                isPotentialTap = false;
+                isScrolling = false;
+            });
+
             key.addEventListener('contextmenu', e => e.preventDefault());
         });
     }
 
-    async handleVirtualInputWithFeedback(note, element) {
-        if (!audioPlayer.isInitialized) await audioPlayer.initialize();
+    async handleVirtualInputWithFeedback(midiNote, element) {
+        if (!audioPlayer.isInitialized) {
+            await audioPlayer.initialize();
+        }
 
-        // Visuals handled by MIDI handler effectively if we simulate input?
-        // But here we want immediate feedback logic similar to MIDI wrapper.
-        // Actually, best to route through MIDI handler logic if possible to unify.
-        // But for now, replicate logic:
+        const isChordMode = this.currentMode === 'chords' || this.currentMode === 'combined';
+        const isActive = element.classList.contains('active');
 
-        const isChord = this.currentMode === 'chords';
-        if (isChord) {
-            const active = element.classList.contains('active');
-            if (active) {
+        // Reset classi feedback precedenti
+        element.classList.remove('correct', 'incorrect');
+
+        if (isChordMode) {
+            // TOGGLE MODE
+            if (isActive) {
                 element.classList.remove('active', 'correct', 'incorrect');
-                if (this.isExerciseActive) exerciseEvaluator.removeNote(note);
+                if (this.isExerciseActive) {
+                    exerciseEvaluator.removeNote(midiNote);
+                }
             } else {
                 element.classList.add('active');
-                this.playVirtualNote(note);
+                await this.playVirtualNote(midiNote);
 
                 if (this.isExerciseActive) {
-                    const status = exerciseEvaluator.checkNote(note);
+                    const status = exerciseEvaluator.checkNote(midiNote);
+
                     if (status === 'correct') {
                         element.classList.add('correct');
-                        exerciseEvaluator.addNote(note);
+                        exerciseEvaluator.addNote(midiNote);
+                        exerciseEvaluator.checkCompletion();
+
                     } else if (status === 'incorrect') {
                         element.classList.add('incorrect');
-                        this.handleExerciseComplete({ isCorrect: false, exercise: this.currentExercise, mode: 'chord' });
+                        const result = {
+                            isCorrect: false,
+                            exercise: this.currentExercise,
+                            userAnswer: [],
+                            expectedPitchClasses: this.currentExercise.pitchClasses,
+                            timeTaken: Date.now() - exerciseEvaluator.startTime,
+                            mode: 'chord'
+                        };
                         exerciseEvaluator.isEvaluating = false;
+                        this.handleExerciseComplete(result);
                     }
                 }
             }
         } else {
+            // MELODY MODE
             element.classList.add('active');
-            this.playVirtualNote(note);
 
             if (this.isExerciseActive) {
-                const correct = exerciseEvaluator.checkSequentialNote(note);
-                if (correct) {
+                const isCorrectSequential = exerciseEvaluator.checkSequentialNote(midiNote);
+
+                if (isCorrectSequential) {
                     element.classList.add('correct');
                     exerciseEvaluator.advanceMelodyIndex();
+
                     if (exerciseEvaluator.isMelodyComplete()) {
-                        this.handleExerciseComplete({ isCorrect: true, exercise: this.currentExercise, mode: 'melody' });
+                        const result = {
+                            isCorrect: true,
+                            exercise: this.currentExercise,
+                            userAnswer: [],
+                            expectedNotes: this.currentExercise.notes,
+                            timeTaken: Date.now() - exerciseEvaluator.startTime,
+                            mode: 'melody'
+                        };
+                        exerciseEvaluator.isEvaluating = false;
+                        this.handleExerciseComplete(result);
                     }
                 } else {
                     element.classList.add('incorrect');
-                    this.handleExerciseComplete({ isCorrect: false, exercise: this.currentExercise, mode: 'melody' });
+                    const result = {
+                        isCorrect: false,
+                        exercise: this.currentExercise,
+                        userAnswer: [],
+                        expectedNotes: this.currentExercise.notes,
+                        timeTaken: Date.now() - exerciseEvaluator.startTime,
+                        mode: 'melody'
+                    };
                     exerciseEvaluator.isEvaluating = false;
+                    this.handleExerciseComplete(result);
                 }
             }
 
-            setTimeout(() => element.classList.remove('active', 'correct', 'incorrect'), 300);
+            await this.playVirtualNote(midiNote);
+
+            setTimeout(() => {
+                element.classList.remove('active', 'correct', 'incorrect');
+            }, 300);
         }
     }
 
-    async playVirtualNote(note) {
-        try { await audioPlayer.playNote(note); } catch (e) { console.error(e); }
+    async playVirtualNote(midiNote) {
+        try {
+            await audioPlayer.playNote(midiNote);
+        } catch (err) {
+            console.error('Audio err:', err);
+        }
     }
 
     clearVirtualKeyboard() {
-        document.querySelectorAll('.piano-key, .note-btn').forEach(k => k.classList.remove('active', 'correct', 'incorrect'));
-        if (this.isExerciseActive) exerciseEvaluator.resetUserNotes();
+        const allKeys = document.querySelectorAll('.piano-key, .note-btn');
+        allKeys.forEach(el => {
+            el.classList.remove('active', 'correct', 'incorrect');
+        });
+
+        if (this.isExerciseActive) {
+            exerciseEvaluator.resetUserNotes();
+        }
     }
 }
 
+// ====================================
+// Initialize App
+// ====================================
 const app = new EarTrainingApp();

@@ -248,12 +248,9 @@ class LicenseManager {
                     <h3 style="color: #f59e0b; font-size: 1.3rem; margin-bottom: 0.5rem;">
                         Versione Gratuita
                     </h3>
-                    <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">
+                    <p style="color: #94a3b8; font-size: 0.9rem;">
                         Attiva una licenza premium per sbloccare tutte le funzionalità
                     </p>
-                    <a href="https://payhip.com/b/yoOFn" target="_blank" class="primary-btn" style="text-decoration: none; display: inline-block; background: var(--success); margin-bottom: 1rem;">
-                        🛒 Acquista Licenza
-                    </a>
                 </div>
             `;
             formDiv.style.display = 'flex';
