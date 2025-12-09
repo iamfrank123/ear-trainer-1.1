@@ -1,5 +1,5 @@
 // Service Worker for Ear Training Pro
-const CACHE_NAME = 'ear-training-v2';
+const CACHE_NAME = 'ear-training-v3';
 const urlsToCache = [
     './',
     './index.html',
