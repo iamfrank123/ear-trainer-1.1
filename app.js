@@ -875,17 +875,24 @@ class EarTrainingApp {
     }
 
     setupHideNameToggle() {
-        const toggle = document.getElementById('hideNameToggle');
+        // Desktop uses 'hideChordNameToggle'
+        const toggle = document.getElementById('hideChordNameToggle');
         if (toggle) {
             toggle.addEventListener('change', () => {
                 const exerciseName = document.getElementById('exerciseName');
+                // Mobile typically uses its own logic, but if present:
                 if (exerciseName) {
-                    exerciseName.classList.toggle('blurred', toggle.checked);
+                    exerciseName.classList.toggle('hidden', toggle.checked);
                 }
+
+                // Desktop uses 'exerciseType'
                 const typeElement = document.getElementById('exerciseType');
                 if (typeElement) {
-                    typeElement.classList.toggle('blurred', toggle.checked);
+                    // styles.css defines .exercise-type.hidden { filter: blur(...) }
+                    typeElement.classList.toggle('hidden', toggle.checked);
                 }
+
+                this.saveSettings();
             });
         }
     }
@@ -940,7 +947,8 @@ class EarTrainingApp {
             scaleRoot: document.getElementById('scaleRoot')?.value,
             // [NEW] Nuovi settings
             chordRoot: document.getElementById('chordRoot')?.value,
-            melodySpeed: document.getElementById('melodySpeed')?.value
+            melodySpeed: document.getElementById('melodySpeed')?.value,
+            hideChordName: document.getElementById('hideChordNameToggle')?.checked
         };
         localStorage.setItem('earTrainerSettings', JSON.stringify(settings));
     }
@@ -984,6 +992,16 @@ class EarTrainingApp {
                     if (el) el.value = settings.melodySpeed;
                     const val = document.getElementById('melodySpeedValue');
                     if (val) val.textContent = settings.melodySpeed;
+                }
+
+                if (settings.hideChordName !== undefined) {
+                    const toggle = document.getElementById('hideChordNameToggle');
+                    if (toggle) {
+                        toggle.checked = settings.hideChordName;
+                        // Trigger visual update
+                        const typeElement = document.getElementById('exerciseType');
+                        if (typeElement) typeElement.classList.toggle('hidden', settings.hideChordName);
+                    }
                 }
 
                 this.updateStartButton();
