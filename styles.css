@@ -1140,6 +1140,23 @@ body::before {
     transform: translateY(3px);
 }
 
+/* Feedback Classes */
+.piano-key.correct,
+.piano-key.white.correct,
+.piano-key.black.correct {
+    background: var(--success) !important;
+    border-color: var(--success);
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+}
+
+.piano-key.incorrect,
+.piano-key.white.incorrect,
+.piano-key.black.incorrect {
+    background: var(--error) !important;
+    border-color: var(--error);
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
 .note-buttons {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));

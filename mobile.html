@@ -280,7 +280,8 @@
         }
 
         .options-panel.open .options-content {
-            max-height: 500px;
+            max-height: 800px;
+            /* Increased to prevent cutoff */
         }
 
         .option-row {
@@ -1103,9 +1104,29 @@
                 document.getElementById('chordOptions').classList.toggle('hidden', mode !== 'chords');
                 document.getElementById('scaleOptions').classList.toggle('hidden', mode !== 'scales');
 
-                // Update exercise label
-                document.querySelector('.exercise-label').textContent =
-                    mode === 'chords' ? 'Accordo corrente' : 'Melodia corrente';
+                // Update exercise label text only, preserving the button
+                const label = document.querySelector('.exercise-label');
+                if (label) {
+                    // Get the button if it exists
+                    const btn = document.getElementById('hideChordBtn');
+                    const text = mode === 'chords' ? 'Accordo corrente ' : 'Melodia corrente ';
+
+                    // Clear and rebuild
+                    label.innerHTML = text;
+                    if (btn) label.appendChild(btn);
+                    else {
+                        // If button was lost (shouldn't happen with this fix, but for safety)
+                        label.innerHTML += `<button class="toggle-btn" id="hideChordBtn" onclick="toggleHideChord()">👁️ Nascondi</button>`;
+                        // Restore state if needed
+                        if (localStorage.getItem('hideChord') === 'true') {
+                            const newBtn = document.getElementById('hideChordBtn');
+                            if (newBtn) {
+                                newBtn.classList.add('active');
+                                newBtn.innerHTML = '👁️ Mostra';
+                            }
+                        }
+                    }
+                }
             });
         });
 
@@ -1153,6 +1174,9 @@
                 name.classList.add('hidden');
                 btn.innerHTML = '👁️ Mostra';
             }
+        } else {
+            const btn = document.getElementById('hideChordBtn');
+            if (btn) btn.innerHTML = '👁️ Nascondi';
         }
 
         // Octave control REMOVED - Fixed 1.5 octaves

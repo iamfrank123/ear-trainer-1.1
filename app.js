@@ -818,6 +818,38 @@ class EarTrainingApp {
                 modal.classList.remove('active');
             });
         }
+
+        // [NEW] Activate License Logic
+        const activateBtn = document.getElementById('activateLicenseBtn');
+        const licenseInput = document.getElementById('licenseInput');
+
+        if (activateBtn && licenseInput) {
+            activateBtn.addEventListener('click', async () => {
+                const code = licenseInput.value;
+                activateBtn.disabled = true;
+                activateBtn.textContent = 'Verifica in corso...';
+
+                try {
+                    const result = await licenseManager.activateLicense(code);
+                    if (result.success) {
+                        licenseManager.showMessage(result.message, 'success');
+                        document.getElementById('licenseForm').style.display = 'none'; // Hide immediately on success
+
+                        // [FIX] Update mobile chips and locks immediately
+                        this.updatePremiumLocks();
+                        this.setupPremiumFeatures(); // Re-bind any changed elements if needed
+                    } else {
+                        licenseManager.showMessage(result.message, 'error');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    licenseManager.showMessage('Errore imprevisto', 'error');
+                } finally {
+                    activateBtn.disabled = false;
+                    activateBtn.textContent = 'Attiva Licenza';
+                }
+            });
+        }
     }
 
     setupAccordion() {
@@ -969,29 +1001,20 @@ class EarTrainingApp {
     setupVirtualKeyboardNew() {
         // Clear Button (Desktop e Mobile)
         const clearBtn = document.getElementById('clearKeyboardBtn') || document.getElementById('clearBtn');
-        clearBtn?.addEventListener('click', () => {
-            this.clearVirtualKeyboard();
-        });
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                this.clearVirtualKeyboard();
+            });
+        }
 
-        // GENERAZIONE DINAMICA TASTIERA (C3 - C6)
+        // GENERAZIONE DINAMICA TASTIERA (Mobile)
         this.renderVirtualKeyboard();
 
-        // Note buttons handler (keep existing logic for buttons)
-        const noteButtons = document.querySelectorAll('.note-btn');
-        noteButtons.forEach(btn => {
-            const newBtn = btn.cloneNode(true);
-            btn.parentNode.replaceChild(newBtn, btn);
+        // ATTACH LISTENERS (Unified for Mobile & Desktop)
+        // Crucial for Desktop: attach listeners to static .piano-key elements
+        this.attachSmartTouchListeners();
 
-            newBtn.addEventListener('pointerdown', (e) => {
-                e.preventDefault();
-                const pitchClass = parseInt(newBtn.dataset.pitch);
-                const baseNote = 60; // C4 default
-                const midiNote = baseNote + pitchClass;
-                this.handleVirtualInputWithFeedback(midiNote, newBtn);
-            });
-        });
-
-        console.log('🎹 Tastiera virtuale inizializzata (Dynamic JS)');
+        console.log('🎹 Tastiera virtuale inizializzata (Unified)');
     }
 
     renderVirtualKeyboard() {
@@ -1004,41 +1027,17 @@ class EarTrainingApp {
         const endNote = 84;   // C6
         const solfege = ['Do', 'Do#', 'Re', 'Re#', 'Mi', 'Fa', 'Fa#', 'Sol', 'Sol#', 'La', 'La#', 'Si'];
 
-        // Track generated black keys to position them absolutely
-        let currentWhiteKeyIndex = 0;
-        let keysHtml = '';
-
         for (let note = startNote; note <= endNote; note++) {
             const pitchClass = note % 12;
             const isBlack = [1, 3, 6, 8, 10].includes(pitchClass);
             const noteName = solfege[pitchClass];
 
             if (isBlack) {
-                // Black key
-                // Calculate position based on previous white keys
-                // We add it to the DOM, but CSS usually handles positioning relative to white keys for static Pianos.
-                // Here we are using flex for white keys and absolute for black keys.
-                // A simplified approach for dynamic generation:
-                // Use the same structure as before: Black keys are siblings but positioned by margin or absolute.
-                // Let's use the explicit structure: div.white, div.black, div.white...
-                // But the previous HTML structure relied on specific order.
-
-                // Let's replicate the structure: 
-                // <div class="piano-key black" style="left: ..."></div>
-                // BUT calculating 'left' dynamically is hard without fixed widths.
-                // The previous CSS used negative margins. 
-                // Let's try to stick to the sequence and let CSS handle it if possible.
-                // OR better: Append Black keys usually *after* the white key they follow (C -> C#).
-
                 const blackKey = document.createElement('div');
                 blackKey.className = 'piano-key black';
                 blackKey.dataset.note = note;
-                // Position logic:
-                // If we use the CSS provided (margin-left: -10px, margin-right: -10px, z-index: 2),
-                // placing it between white keys in Flex works perfectly!
                 container.appendChild(blackKey);
             } else {
-                // White key
                 const whiteKey = document.createElement('div');
                 whiteKey.className = 'piano-key white';
                 whiteKey.dataset.note = note;
@@ -1048,51 +1047,32 @@ class EarTrainingApp {
         }
 
         // SCROLL INITIAL POSITION
-        // We want to shift ~5 notes to the right. 5 white keys * approx 28px = 140px.
         setTimeout(() => {
             const pianoOuter = document.getElementById('pianoKeyboard');
             if (pianoOuter) {
-                // Scroll to approx C4 (Note 60).
-                // C3 is 48. C4 is 60. Difference 12 semitones.
-                // 7 white keys per octave.
-                // So C4 is the 8th white key.
-                // 8 * 30px (approx with borders) = 240px.
                 pianoOuter.scrollLeft = 200;
             }
         }, 100);
-
-        // ATTACH SMART TOUCH LISTENERS
-        this.attachSmartTouchListeners();
     }
 
     attachSmartTouchListeners() {
-        const keys = document.querySelectorAll('.piano-inner .piano-key');
+        // [MODIFIED] Selector now targets BOTH Mobile and Desktop keys, plus buttons.
+        const keys = document.querySelectorAll('.piano-key, .note-btn');
 
-        // State for swipe detection
         let startX = 0;
         let startY = 0;
         let isScrolling = false;
         let isPotentialTap = false;
-        const TAP_THRESHOLD = 10; // pixels movement allowed for a tap
+        const TAP_THRESHOLD = 10;
 
         keys.forEach(key => {
-            // Pointer Down: Start tracking
             key.addEventListener('pointerdown', (e) => {
-                // Don't prevent default yet, we want to allow scrolling
                 startX = e.clientX;
                 startY = e.clientY;
                 isPotentialTap = true;
                 isScrolling = false;
-
-                // Visual feedback immediate? 
-                // NO, user requested "swipe non deve applicare il tapping".
-                // If we show feedback, it feels like tapping.
-                // We wait for pointerup.
             });
 
-            // Pointer Move: Check for scroll/swipe
-            // We attach this to the key, but really the scroll happens on the container (bubbling).
-            // Actually, if we scroll, the 'pointercancel' might fire or we detect movement.
             key.addEventListener('pointermove', (e) => {
                 if (!isPotentialTap) return;
 
@@ -1101,35 +1081,42 @@ class EarTrainingApp {
 
                 if (diffX > TAP_THRESHOLD || diffY > TAP_THRESHOLD) {
                     isPotentialTap = false;
-                    isScrolling = true; // User is definitively scrolling/swiping
+                    isScrolling = true;
                 }
             });
 
-            // Pointer Up: Validate Tap
             key.addEventListener('pointerup', (e) => {
                 if (isPotentialTap && !isScrolling) {
-                    // It was a clean tap!
-                    const note = parseInt(key.dataset.note);
-                    this.handleVirtualInputWithFeedback(note, key);
+                    // Tap / Click verified
+                    let note = parseInt(key.dataset.note);
+
+                    // Handle .note-btn which uses data-pitch (0-11)
+                    if (isNaN(note)) {
+                        const pitch = parseInt(key.dataset.pitch);
+                        if (!isNaN(pitch)) {
+                            note = 60 + pitch; // Default to C4 octave
+                        }
+                    }
+
+                    if (!isNaN(note)) {
+                        this.handleVirtualInputWithFeedback(note, key);
+                    }
                 }
                 // Reset
                 isPotentialTap = false;
                 isScrolling = false;
             });
 
-            // Pointer Cancel: scrolling took over completely by browser
             key.addEventListener('pointercancel', (e) => {
                 isPotentialTap = false;
                 isScrolling = false;
             });
 
-            // Prevent context menu
             key.addEventListener('contextmenu', e => e.preventDefault());
         });
     }
 
     async handleVirtualInputWithFeedback(midiNote, element) {
-        // Inizializza audio se serve
         if (!audioPlayer.isInitialized) {
             await audioPlayer.initialize();
         }
@@ -1141,37 +1128,26 @@ class EarTrainingApp {
         element.classList.remove('correct', 'incorrect');
 
         if (isChordMode) {
-            // TOGGLE MODE (ON/OFF) - Per accordi
+            // TOGGLE MODE
             if (isActive) {
-                // Rimuovi (Toggle Off)
                 element.classList.remove('active', 'correct', 'incorrect');
                 if (this.isExerciseActive) {
                     exerciseEvaluator.removeNote(midiNote);
                 }
             } else {
-                // Aggiungi (Toggle On)
                 element.classList.add('active');
                 await this.playVirtualNote(midiNote);
 
                 if (this.isExerciseActive) {
-                    // Check se la nota è corretta
                     const status = exerciseEvaluator.checkNote(midiNote);
 
                     if (status === 'correct') {
-                        // ✅ NOTA CORRETTA
                         element.classList.add('correct');
-
-                        // Aggiungi la nota all'evaluator
                         exerciseEvaluator.addNote(midiNote);
-
-                        // Chiama checkCompletion() per verificare se l'accordo è completo
                         exerciseEvaluator.checkCompletion();
 
                     } else if (status === 'incorrect') {
-                        // ❌ NOTA SBAGLIATA - FEEDBACK NEGATIVO ISTANTANEO!
                         element.classList.add('incorrect');
-
-                        // STOP e mostra feedback negativo immediatamente
                         const result = {
                             isCorrect: false,
                             exercise: this.currentExercise,
@@ -1180,30 +1156,23 @@ class EarTrainingApp {
                             timeTaken: Date.now() - exerciseEvaluator.startTime,
                             mode: 'chord'
                         };
-
                         exerciseEvaluator.isEvaluating = false;
                         this.handleExerciseComplete(result);
                     }
                 }
             }
         } else {
-            // MELODY/SCALE MODE (MOMENTARY)
+            // MELODY MODE
             element.classList.add('active');
 
             if (this.isExerciseActive) {
-                // Check se è la nota corretta nella sequenza
                 const isCorrectSequential = exerciseEvaluator.checkSequentialNote(midiNote);
 
                 if (isCorrectSequential) {
                     element.classList.add('correct');
                     exerciseEvaluator.advanceMelodyIndex();
 
-                    // Suona la nota
-                    // await this.playVirtualNote(midiNote); // Mossa sotto
-
-                    // Check se melodia completata
                     if (exerciseEvaluator.isMelodyComplete()) {
-                        // Melodia completata con successo!
                         const result = {
                             isCorrect: true,
                             exercise: this.currentExercise,
@@ -1212,15 +1181,11 @@ class EarTrainingApp {
                             timeTaken: Date.now() - exerciseEvaluator.startTime,
                             mode: 'melody'
                         };
-
                         exerciseEvaluator.isEvaluating = false;
                         this.handleExerciseComplete(result);
                     }
                 } else {
-                    // ❌ NOTA SBAGLIATA - FEEDBACK NEGATIVO ISTANTANEO!
                     element.classList.add('incorrect');
-
-                    // STOP e mostra feedback negativo immediatamente
                     const result = {
                         isCorrect: false,
                         exercise: this.currentExercise,
@@ -1229,16 +1194,13 @@ class EarTrainingApp {
                         timeTaken: Date.now() - exerciseEvaluator.startTime,
                         mode: 'melody'
                     };
-
                     exerciseEvaluator.isEvaluating = false;
                     this.handleExerciseComplete(result);
                 }
             }
 
-            // Suona la nota in ogni caso
             await this.playVirtualNote(midiNote);
 
-            // Rimuovi visual active dopo poco
             setTimeout(() => {
                 element.classList.remove('active', 'correct', 'incorrect');
             }, 300);
@@ -1254,13 +1216,11 @@ class EarTrainingApp {
     }
 
     clearVirtualKeyboard() {
-        // Rimuovi TUTTE le classi di feedback da tutti i tasti
         const allKeys = document.querySelectorAll('.piano-key, .note-btn');
         allKeys.forEach(el => {
             el.classList.remove('active', 'correct', 'incorrect');
         });
 
-        // Reset evaluator user notes
         if (this.isExerciseActive) {
             exerciseEvaluator.resetUserNotes();
         }

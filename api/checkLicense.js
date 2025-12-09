@@ -8,6 +8,7 @@
 const VALID_LICENSES = [
     'EAR-DEMO-2025',
     'DEV-MASTER-KEY',
+    'DEV-MASTER-KEY-2025',
     'EAR-PRO-2024',
     'EAR-PREMIUM-001',
     'EAR-PREMIUM-002',
