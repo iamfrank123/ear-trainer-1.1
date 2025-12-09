@@ -819,6 +819,35 @@
                 opacity: 1;
             }
         }
+
+        /* Reveal Mask */
+        .reveal-mask {
+            background: var(--bg-elevated);
+            border: 1px dashed var(--accent);
+            color: transparent !important;
+            border-radius: 8px;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .reveal-mask::after {
+            content: "Tocca per svelare";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: var(--accent);
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .reveal-mask:active {
+            transform: scale(0.98);
+            background: var(--bg-card);
+        }
     </style>
 </head>
 
@@ -907,6 +936,10 @@
                         <div class="chord-chip premium-chip" data-type="min13">Min13</div>
                     </div>
                     <div class="option-row">
+                        <span class="option-label">🙈 Nascondi Risposta</span>
+                        <div class="toggle-switch" id="toggleHideChordName" onclick="toggleSwitch(this)"></div>
+                    </div>
+                    <div class="option-row">
                         <span class="option-label">🔄 Inversioni</span>
                         <div class="toggle-switch" id="toggleInversions" onclick="toggleSwitch(this)"></div>
                     </div>
@@ -970,9 +1003,6 @@
             <div class="exercise-card hidden" id="exerciseCard" style="margin-bottom: 1rem;">
                 <div class="exercise-label">
                     <span id="exerciseLabelText">Accordo corrente</span>
-                    <button class="toggle-btn" id="hideChordBtn" onclick="toggleHideChord()">
-                        👁️ Nascondi
-                    </button>
                 </div>
                 <div class="exercise-name" id="exerciseName">C Maggiore</div>
                 <button class="listen-btn" id="listenBtn">
